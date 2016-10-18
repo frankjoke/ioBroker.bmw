@@ -1,0 +1,32 @@
+{
+    "common": {
+        "name":                     "radar",
+        "version":                  "0.1.0",
+        "title":                    "Radar adapter for IP and Bluetooth",
+        "desc":                     {
+            "en": "This adapter allowes to use directly RaspBerry Pi's GPIO pins for input and output",
+            "de": "Dieser Adapter ermöglicht die GPIO Pins vom RaspBerry Pi als Ein/Ausgänge zu nutzen"
+        },
+        "authors": [
+            "frankjoke <frankjoke@hotmail.com>"
+        ],
+        "license":                  "MIT",
+        "platform":                 "Javascript/Node.js",
+        "mode":                     "daemon",
+        "availableModes":           ["daemon"],
+        "readme":                   "https://github.com/frankjoke/iobroker.radar/blob/master/README.md",
+        "loglevel":                 "info",
+        "icon":                     "radar.png",
+        "keywords":                 ["ping", "bluetooth", "radar"],
+        "extIcon":                  "https://raw.githubusercontent.com/frankjoke/iobroker.radar/master/admin/radar.png",
+		"type":                     "hardware"
+    },
+    "native": {
+        "devices":     	[],
+        "scandelay":   	60,
+		"printerdelay":	500
+    },
+    "objects": [
+
+    ]
+}
