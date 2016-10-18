@@ -1,0 +1,2 @@
+[Samsung] Soundbar,,50:56:bf:42:41:5c,Audiogerät,Sprechgarnitur,18.10.2016 10:27:23,18.10.2016 10:27:23,1,0,100.0%,Ja,Ja,Ja,,
+HP Touch to Pair Mouse,,f0:65:dd:c0:b7:ad,Peripheriegerät,,18.10.2016 10:27:23,18.10.2016 10:27:23,1,0,100.0%,Ja,Ja,Ja,,

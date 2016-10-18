@@ -24,7 +24,8 @@
     "native": {
         "devices":     	[],
         "scandelay":   	60,
-		"printerdelay":	500
+		"printerdelay":	500,
+        "delayaway":    10
     },
     "objects": [
 
