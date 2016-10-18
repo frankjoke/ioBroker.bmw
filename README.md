@@ -18,8 +18,11 @@ Will try to use on Windows [http://www.nirsoft.net/utils/bluetooth_viewer.html],
 ## Install
 
 ```add with iobroker Admin  Adapter the git repo```
+
 On Linux install `fping` (with me it worked like `sudo apt-get install fping`)
+
 if `fping` is available the tool will use ping and fping to check on IP availabilit. 
+
 Also make sure that `hcitool` is installed, normally part of `bluez`.
 
 ## Configuration
