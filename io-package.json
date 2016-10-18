@@ -1,7 +1,7 @@
 {
     "common": {
         "name":                     "radar",
-        "version":                  "0.1.0",
+        "version":                  "0.2.0",
         "title":                    "Radar adapter for IP and Bluetooth",
         "desc":                     {
             "en": "This adapter allowes to use directly RaspBerry Pi's GPIO pins for input and output",

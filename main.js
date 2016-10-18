@@ -79,84 +79,36 @@ function processMessages() {
     });
 }
 
-/* No state changes required!
-// is called if a subscribed state changes
-adapter.on('stateChange', function (id, state) {
-    // Warning, state can be null if it was deleted
-    var lid = id.split('.').slice(2).join('.');
-    var item = idList[lid];
+var objects = {};
+function makeState(id,value, callback) {
+    callback = typeof callback === 'functioon' || function() {};
+    if (objects[id])
+        adapter.setState(id,value,true,callback);
 
-    // you can use the ack flag to detect if it is status (true) or command (false)
-    if (state && !state.ack && !(state['from'] && state['from'].endsWith('.rpi-gpio.'+adapter.instance))) {
-
-        if (!item || item.direction=='Input')
-            return adapter.log.warn(util.format('Invalid or read only item to change: %s, %j',lid,item));
-        
-        adapter.log.info('stateChange ' + id + ' to ' + util.inspect(state));
-        gpio.write(item.pin,!!state.val, function(err,val) {
-            if (err)
-                adapter.log.warn(util.format('Error (%j) when writing to %s =%j',err,id,state));
-        });
-    }
-});
-
-
-
-function createState(item,callback) {
-    var id = item.direction + '.' + item.name;
-    var c = {
-        type: 'state',
+    var st = {
         common: {
-            name:   id,
-            type:   'boolean',
-            read:   true,
-            write:  item.direction === 'Output',
-            role:   'switch',
-            desc:   JSON.stringify(item)
+            name:  id, // You can add here some description
+            read:  true,
+            write: false,
+            state: 'state',
+            role:  'value',
+            type:  typeof value
         },
-        native : {
-            item:       item,
-        }
+        type: 'state',
+        _id: id
     };
-    item.id = id;
-    idList[id] = item;
-    adapter.setObject(id,c,function(err) {
-        adapter.log.info(util.format('Created State %s with %j, err was %j',id,c,err));
-        if (item.direction=='Input') {
-            gpio.setup(item.pin,gpio.DIR_IN,gpio.EDGE_BOTH, function(err,val) {
-                if(err)
-                    return callback(err);
-                gpio.read(item.pin, function(err,val) {
-                    adapter.setState(item.id, { 
-                        val: !!val, 
-                        ack: true, 
-                        ts: Date.now()
-                    });             
-                    return callback(err);
-                });
-            });
-        } else {
-            gpio.setup(item.pin,gpio.DIR_OUT,callback);
-        }
-
+    if (id.endsWith('Percent'))
+        st.common.unit = "%";
+    adapter.extendObject(id,st,function(err,obj) {
+            if(err)
+                callback(err,obj);
+            else {
+                objects[id] = obj;
+                adapter.setState(id,value,true,callback);
+            }
     });
- 
-}
-
-function handleInputs(channel, value) {
-        var item = pinList[parseInt(channel)];
-        if (!item || item.direction=='Output') {
-            return adapter.log.warn('Invalid Channel ' + channel + ', No input dfined for it!');
-        }
-        adapter.log.info(util.format('Change %s to %j',item.id,value));
-        adapter.setState(item.id, { 
-            val: !!value, 
-            ack: true, 
-            ts: Date.now()
-        });
 
 }
-*/
 
 var nobleRunning = null;
 
@@ -250,6 +202,8 @@ function scanHP(item,callback) {
         }
         return str;
     }
+
+    var idn = item.id+'.';
     if (!item.ip || item.ip==='')
         return callback(null);
     request('http://'+item.ip+'/DevMgmt/ConsumableConfigDyn.xml', function (error, response, body) {
@@ -268,6 +222,7 @@ function scanHP(item,callback) {
                         if (item["dd:ConsumableTypeEnum"]=="ink") {
                             var p = "P" + item["dd:ConsumableStation"],
                                 lc = item["dd:ConsumableLabelCode"],
+                                idnc = idn + lc + '.',
                                 d = item["dd:Installation"]["dd:Date"],
                                 l = item["dd:ConsumablePercentageLevelRemaining"],
                                 ci = item["dd:ConsumableIcon"],
@@ -277,20 +232,9 @@ function scanHP(item,callback) {
                                 n = item["dd:ConsumableSelectibilityNumber"],
                                 rgb = '#' + (0x1000000 + rgb).toString(16).slice(1),
                                 ss = util.format("%s = %s, %s, %d%%, %s, %s, %s",p, lc, d, l, n, rgb, s);
-/*
-                            var cf = getState(idn(lc+".fillPercent"));
-                            if (!cf.val) { 
-                                logs(idn(lc+".fillPercent"),"debug1");
-                                createState(idn(lc+".fillPercent"),l);
-                                createState(idn(lc+".color"),rgb);
-                                createState(idn(lc+".text"), ss);
-                            } else {
-                                setState(instanz+idn(lc+".fillPercent"),l);
-                                setState(instanz+idn(lc+".color"),rgb);
-                                setState(instanz+idn(lc+".text"), ss);
-                            }
-*/
-//                                logj("Color text",getState(instanz+idn(lc+".text")));
+                                makeState(idnc+'fillPercent', parseInt(l));
+                                makeState(idnc+'color',rgb);
+                                makeState(idnc+'text',ss);
                             colors.push(ss);
                         }
                     }
@@ -393,9 +337,17 @@ function scanAll() {
                 whoHere.push(item.name);
             item.anwesend = anw;
             item.cnt = cnt;
+            var idn = item.id;
+            makeState(idn+'.count',cnt);
+            makeState(idn+'.here',anw);
+            makeState(idn+'.ipHere',item.ipHere);
+            makeState(idn+'.btHere',item.btHere);
 //            adapter.log.debug(util.format('Item %s has state:',key,item));
         }
         countHere = whoHere.length;
+        makeState('countHere',countHere);
+        makeState('whoHere',whoHere.join(', '));
+
         adapter.log.info(util.format('%d devices here: %j',countHere,whoHere));
     })
 
@@ -447,7 +399,7 @@ function main() {
                         return callback(util.format("Invalid item name '%j', must be at least 2 letters long",item.name));
                     if (scanList[item.name])
                         return callback(util.format("Double item name '%s', names cannot be used more than once!", item.name));
-                    item.id = 'Scan.' + item.name;
+                    item.id = item.name;
                     item.ip = item.ip ? item.ip.trim() : '';
                     item.bluetooth = item.bluetooth ? item.bluetooth.trim() : '';
                     if (item.bluetooth!== '' && !/^..:..:..:..:..:..$/.test(item.bluetooth))

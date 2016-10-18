@@ -6,7 +6,12 @@ ioBroker radar für IP und Bluetooth Adapter
 Mit diesem Adapter kann man testen ob Geräte via Netzwerk oder Bluetooth verfügbar sind.
 Er benutzt Ping (und wenn installiert auch fping)
 
+Will try to use on Windows [http://www.nirsoft.net/utils/bluetooth_viewer.html], let's see
+
 ## Changelog
+### 0.2.0
+* First public release, working fine on Raspberry
+
 ### 0.1.0
 * Ok, my first working version on Raspberry!
 
@@ -21,6 +26,7 @@ Beginnt der Name des Geätes mit 'HP-' dann nimmt radar an es handelt sich um ei
 
 ### Todo
 Nicht gebrauchte states löschen. 
+Auf Windows mit Bluetooth eine 2. Alternative zu Noble (Benutzt nur BT-LE) suchen.
 
 ## Installation
 Auf Linux sollte das tool 'fping' (z.B. mit `sudo apt-get install fping`) installiert werden welches zusätzlich zum normalen ping verwendet wird.
