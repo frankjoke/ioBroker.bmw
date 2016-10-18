@@ -32,6 +32,8 @@
         "Device setup":        {"en": "Device setup",  "de": "Device Einstellungen"},
         "Scan Delay:":   {"en": "Delay in seconds between scans (>=30): ",     
                 "de": "Verzögerung in Sekunden zwischen Abfragen (>=30): "},
+        "Delay Away:":   {"en": "How often should be a device not detected before it's marked as away' (>=2): ",     
+                "de": "Wie of muss ein Device nicht verfügbar sein bevor es als 'nicht da' markiert wird (>=2): "},
         "Printer Delay:":   {"en": "Delay in scans between printer fill check (>=100): ",     
                 "de": "Verzögerung in scans zwischen Druckerfüllstand-Abfrage (>=100): "},
         "description":  {"de":"IP-Adressen können als Name oder Zahlen angegeben werden. Bluetooth ist immer '01:23:45:67:89:ab', eine der zwei muß mindestens angegeben werden.",
@@ -114,6 +116,7 @@
     <h4 class="translate">radar settings</h4>
     <table>
         <tr><td class="translate">Scan Delay:</td><td><input class="value number" id="scandelay" type="input" size="5"/></td></tr>
+        <tr><td class="translate">Delay Away:</td><td><input class="value number" id="delayaway" type="input" size="5"/></td></tr>
         <tr><td class="translate">Printer Delay:</td><td><input class="value number" id="printerdelay" type="input" size="5"/></td></tr>
     </table>
     <h4 class="translate">Device setup</h4>

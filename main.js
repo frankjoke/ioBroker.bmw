@@ -263,7 +263,7 @@ function scanAll() {
         function(callbp) {
             myNoble(scanDelay - 10000, function(err,data) {
                 if (err)
-                    return callb(err);
+                    return callbp(err);
                 adapter.log.debug(util.format('Noble returned %d items:%j',Object.keys(data).length,data));
                 var found = 0;
                 for(var key in scanList) 
