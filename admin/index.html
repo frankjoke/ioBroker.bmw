@@ -27,12 +27,12 @@
 <script type="text/javascript">
     var devices = [];
     systemDictionary = {
-        "rpi-gpio adapter settings": {"en": "rpi-gpio adapter settings", "de": "rpi-gpio Adapter-Einstellungen"},
-        "rpi-gpio settings":         {"en": "rpi-gpio settings",         "de": "rpi-gpio Einstellungen"},
-        "GPIO setup":        {"en": "GPIO setup",  "de": "GPIO Einstellungen"},
-        "BCM Pin numbering mode:":   {"en": "Use BCM Pin numbering (default is connector pin): ",     "de": "BCM Pin Nummern verwenden (default ist hardware pin): "},
-        "description":  {"en":"Use 'gpio readall' on Raspi to see pin numbers (BCM and GPIO)",
-            "de": "Mit 'gpio readall' am Raspi kann man die Pin-Nummern sehen (BCM and GPIO)"}
+        "radar adapter settings": {"en": "radar adapter settings", "de": "radar Adapter-Einstellungen"},
+        "radar settings":         {"en": "radar settings",         "de": "radar Einstellungen"},
+        "Device setup":        {"en": "Device setup",  "de": "Device Einstellungen"},
+        "Scan Delay:":   {"en": "Delay in seconds between scans (>30): ",     "de": "Verzögerung zwischen den scans in Sekunden (>30): "},
+        "description":  {"de":"IP-Adressen können als Name oder Zahlen angegeben werden. Bluetooth ist immer '01:23:45:67:89:ab', eine der zwei muß mindestens angegeben werden."},
+            "en": "IP can be name or number (like fritz.box or 168.192.0.1). Bluetooth is always '01:23:45:67:89:ab', either or both of them have to be there."}
     };
 
     function setValue(id, value, onChange) {
@@ -75,7 +75,7 @@
             setValue(key, settings[key], onChange);
         }
 
-        editTable('devices', ['name', 'pin', 'direction'], devices, 350);
+        editTable('devices', ['name', 'ip', 'bluetooth'], devices, 350);
         onChange(false);
     }
 
@@ -94,7 +94,7 @@
         });
 
         // Get edited table
-        obj.devices = getTableResult('devices', ['name', 'pin', 'direction']);
+        obj.devices = getTableResult('devices', ['name', 'ip', 'bluetooth']);
 
         callback(obj);
     }
@@ -104,16 +104,15 @@
 <div id="adapter-container">
 
     <table><tr>
-        <td><img src="rpi-gpio.png" width="64" height="64"></td>
-        <td style="padding-top: 20px;padding-left: 10px"><h3 class="translate">rpi-gpio adapter settings</h3></td>
+        <td><img src="radar.png" width="64" height="64"></td>
+        <td style="padding-top: 20px;padding-left: 10px"><h3 class="translate">radar adapter settings</h3></td>
     </tr></table>
 
-    <h4 class="translate">rpi-gpio settings</h4>
+    <h4 class="translate">radar settings</h4>
     <table>
         <tr><td class="translate">BCM Pin numbering mode:</td><td><input class="value" id="bcmmode" type="checkbox" /></td></tr>
     </table>
-    <h4 class="translate">GPIO setup</h4>
-    <p class="translate">description</p>
+    <h4 class="translate">Device setup</h4>
     <table id="devices"></table><div id="pager-devices"></div>
     
 

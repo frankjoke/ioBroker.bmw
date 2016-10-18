@@ -1,8 +1,8 @@
 /**
  *
- *      iobroker PING Adapter
+ *      iobroker radar Adapter
  *
- *      (c) 2014-2016 bluefox<dogafox@gmail.com>
+ *      (c) 2016- <frankjoke@hotmail.com>
  *
  *      MIT License
  *
@@ -11,10 +11,9 @@
 /*jslint node: true */
 "use strict";
 var utils   =   require(__dirname + '/lib/utils'); // Get common adapter utils
-var adapter =   utils.adapter('rpi-gpio');
+var adapter =   utils.adapter('radar');
 
 var async =     require('async');
-var gpio =      require('rpi-gpio');
 var util =      require('util');
 
 var isStopping = false;

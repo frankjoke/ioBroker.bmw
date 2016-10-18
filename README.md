@@ -1,16 +1,14 @@
-![Logo](admin/rpi-gpio.png)
-ioBroker rpi-gpio Adapter für Raspberyy Pi
+![Logo](admin/radar.png)
+ioBroker radar für IP und Bluetooth Adapter
 ==============
 
-# Use RaspBeryy GPIO pins directly in ioBroker
-
-Mit diesem Adapter kann man die GPIO-Pins am Raspberry Pi ansteuern (natürlich nur wenn der Adapter auf dem Raspi läuft).
-
-
+# ioBroker radar Adapter für IP und Bluetooth
+Mit diesem Adapter kann man testen ob Geräte via Netzwerk oder Bluetooth verfügbar sind.
+Er benutzt Ping (und wenn installiert auch fping)
 
 ## Changelog
 ### 0.1.0
-* Ok, my first working version in both directions!
+* Ok, my first working version on Raspberry!
 
 ## Install
 
@@ -18,14 +16,14 @@ Mit diesem Adapter kann man die GPIO-Pins am Raspberry Pi ansteuern (natürlich 
 
 ## Configuration
 
-Jeder Pin bekommt einen Namen und wird als Ausgang oder Eingang definiert ('output' oder 'input'  bzw 'o' oder 'i' ins Feld schreiben).
-Wenn man den BCM-Mode wählt dann ist die Pin-Nummer nach BCM einzugeben, sonst ist der Pin die HW-Pin-Nummer.
-Auf dem Raspi kann man (zumindest unter neuerem Jessie Betriebssystem) mit 'gpio readall' die Pin-Konfiguration anzeigen lassen.
+Jedes Gerät bekommt einen Namen und es wird entweder wird als Ausgang oder Eingang definiert ('output' oder 'input'  bzw 'o' oder 'i' ins Feld schreiben).
+Beginnt der Name des Geätes mit 'HP-' dann nimmt radar an es handelt sich um einen HP-Drucker und es versucht auch (alle 500 scan-Versuche) den Tintenstand auszulesen!
 
 ### Todo
 Nicht gebrauchte states löschen. 
-Eingabe der Pins und Aus/Eingänge einschränken/verbessern 
-SPI oder/und I2C support
+
+## Installation
+Auf Linux sollte das tool 'fping' (z.B. mit `sudo apt-get install fping`) installiert werden welches zusätzlich zum normalen ping verwendet wird.
 
 ## License
 
