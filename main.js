@@ -337,7 +337,7 @@ function scanAll() {
                 if (-cnt>=delayAway)
                     anw = false;
             }
-            if (anw)
+            if (anw && !item.name.endsWith('-'))
                 whoHere.push(item.name);
             item.anwesend = anw;
             item.cnt = cnt;

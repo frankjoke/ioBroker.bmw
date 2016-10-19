@@ -9,6 +9,10 @@ Er benutzt Ping (und wenn installiert auch fping)
 Will try to use on Windows [http://www.nirsoft.net/utils/bluetooth_viewer.html], let's see
 
 ## Changelog
+### 0.2.1
+* Implementierung von anyBelow10 wo angezeigt wird ob im Drucker irgendeine Farbe auf/unter 10% Füllstand ist.
+* Implementierung von Ausschluß aus whoHere wenn Name mit `-` endet
+
 ### 0.2.0
 * First public release, working fine on Raspberry
 
@@ -28,7 +32,9 @@ Also make sure that `hcitool` is installed, normally part of `bluez`.
 ## Configuration
 
 Jedes Gerät bekommt einen Namen und es wird entweder wird als Ausgang oder Eingang definiert ('output' oder 'input'  bzw 'o' oder 'i' ins Feld schreiben).
-Beginnt der Name des Geätes mit 'HP-' dann nimmt radar an es handelt sich um einen HP-Drucker und es versucht auch (alle 500 scan-Versuche) den Tintenstand auszulesen!
+Beginnt der Name des Geätes mit `HP-` dann nimmt radar an es handelt sich um einen HP-Drucker und es versucht auch (alle 500 scan-Versuche) den Tintenstand auszulesen!
+
+Wenn ein Gerätename mit `-` endet (z.B. `Internet-`) dann wird er nicht in whoHere/countHere gelistet. Damit können Geräte oder andere Devices vom Anwesenheitscheck ausgeklammert werden.
 
 ### Todo
 Nicht gebrauchte states löschen. 
