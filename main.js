@@ -216,6 +216,7 @@ function scanHP(item,callback) {
             } else {
                 var po = result["ccdyn:ConsumableConfigDyn"]["ccdyn:ConsumableInfo"];
                 var colors = [];
+                var below10 = false;
                 if (Array.isArray(po)) 
                     for (var i in po) {
                         var item = po[i];
@@ -224,7 +225,7 @@ function scanHP(item,callback) {
                                 lc = item["dd:ConsumableLabelCode"],
                                 idnc = idn + lc + '.',
                                 d = item["dd:Installation"]["dd:Date"],
-                                l = item["dd:ConsumablePercentageLevelRemaining"],
+                                l = parseInt(item["dd:ConsumablePercentageLevelRemaining"]),
                                 ci = item["dd:ConsumableIcon"],
                                 s = ci["dd:Shape"],
                                 fc = ci["dd:FillColor"],
@@ -232,13 +233,16 @@ function scanHP(item,callback) {
                                 n = item["dd:ConsumableSelectibilityNumber"],
                                 rgb = '#' + (0x1000000 + rgb).toString(16).slice(1),
                                 ss = util.format("%s = %s, %s, %d%%, %s, %s, %s",p, lc, d, l, n, rgb, s);
-                                makeState(idnc+'fillPercent', parseInt(l));
+                                makeState(idnc+'fillPercent', l);
                                 makeState(idnc+'color',rgb);
                                 makeState(idnc+'text',ss);
                             colors.push(ss);
+                            if (l<=10)
+                                below10 = true;
                         }
                     }
-                adapter.log.debug(util.format('HP Printer iks found:%j',colors));
+                makeState(idn+'anyBelow10',below10);
+                adapter.log.debug(util.format('HP Printer inks found:%j',colors));
                 callback(null);
             } 
         });
