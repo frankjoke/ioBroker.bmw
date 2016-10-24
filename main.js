@@ -42,17 +42,18 @@ function stop(dostop) {
         adapter.stop();
 } 
 
-adapter.on('message', function (obj) {
-    if (obj) processMessage(obj);
-    processMessages();
-});
-
 adapter.on('ready', function () {
     main();
 });
 
 adapter.on('unload', function () {
     stop(false);
+});
+
+/*
+adapter.on('message', function (obj) {
+    if (obj) processMessage(obj);
+    processMessages();
 });
 
 function processMessage(obj) {
@@ -78,7 +79,7 @@ function processMessages() {
         }
     });
 }
-
+*/
 var objects = {};
 function makeState(id,value, callback) {
     callback = typeof callback === 'functioon' || function() {};
@@ -113,10 +114,6 @@ function makeState(id,value, callback) {
 var nobleRunning = null;
 
 function myNoble(len,callback) {
-    var idf = {};
-    if (nobleRunning) 
-        clearTimeout(nobleRunning);
-    nobleRunning = null;
 
     function stopNoble(idf) {
         if (nobleRunning)
@@ -128,6 +125,12 @@ function myNoble(len,callback) {
         return idf;
     }
     
+
+    var idf = {};
+    if (nobleRunning) 
+        clearTimeout(nobleRunning);
+    nobleRunning = null;
+
     if (isStopping)
         return callback("Stopping");
     
@@ -171,29 +174,26 @@ function scanFping(item,callback) {
 
 var doHci = true;
 function scanHci(item,callback) {
-            if (!item.bluetooth || item.bluetooth.length<16) {
-                item.btHere = false;
-                return callback(null,false);
-            }
-            if (item.bluetooth.startsWith('7c:2f:80')) { // check if G-Tag
-                return callback(null,false); // no need to scan G-Tag, will not work!
-            }
-                
-            exec('hcitool name ' + item.bluetooth, function (error, stdout, stderr) {
+    if (!item.bluetooth || item.bluetooth.length<16) {
+        item.btHere = false;
+        return callback(null,false);
+    }
+    if (item.bluetooth.startsWith('7c:2f:80')) { // check if G-Tag
+        return callback(null,false); // no need to scan G-Tag, will not work!
+    }
+        
+    exec('hcitool name ' + item.bluetooth, function (error, stdout, stderr) {
 //                logs('hcitool '+ item.bt + " = " + stdout, 'debug2');
-                var bth = false;
-                if (error) {
-//                    logs('hcitool name '+item.bluetooth+' error: ' + error, 'debug2');
-                    return callback(null,false);
-                } else {
-                    if (stdout > "") {
-                        item.btname = stdout.trim();
-                        bth = item.btHere = true;
-                    }
-                }
-                return callback(null,bth);
-            });
-        }       
+        var bth = false;
+        if (error) 
+            return callback(null,false);
+        if (stdout > "") {
+            item.btname = stdout.trim();
+            bth = item.btHere = true;
+        }
+        callback(null,bth);
+    });
+}       
 
 function scanHP(item,callback) {
     function parseNumbers(str) {
@@ -211,40 +211,38 @@ function scanHP(item,callback) {
             return callback(null);
         var parser = new xml2js.Parser({explicitArray:false,valueProcessors:[parseNumbers]});
         parser.parseString(body, function(err,result){
-            if (err) {
+            if (err) 
                 return callback(null);
-            } else {
-                var po = result["ccdyn:ConsumableConfigDyn"]["ccdyn:ConsumableInfo"];
-                var colors = [];
-                var below10 = false;
-                if (Array.isArray(po)) 
-                    for (var i in po) {
-                        var item = po[i];
-                        if (item["dd:ConsumableTypeEnum"]=="ink") {
-                            var p = "P" + item["dd:ConsumableStation"],
-                                lc = item["dd:ConsumableLabelCode"],
-                                idnc = idn + lc + '.',
-                                d = item["dd:Installation"]["dd:Date"],
-                                l = parseInt(item["dd:ConsumablePercentageLevelRemaining"]),
-                                ci = item["dd:ConsumableIcon"],
-                                s = ci["dd:Shape"],
-                                fc = ci["dd:FillColor"],
-                                rgb = fc["dd:Blue"] | (fc["dd:Green"] << 8) | (fc["dd:Red"] << 16),
-                                n = item["dd:ConsumableSelectibilityNumber"],
-                                rgb = '#' + (0x1000000 + rgb).toString(16).slice(1),
-                                ss = util.format("%s = %s, %s, %d%%, %s, %s, %s",p, lc, d, l, n, rgb, s);
-                                makeState(idnc+'fillPercent', l);
-                                makeState(idnc+'color',rgb);
-                                makeState(idnc+'text',ss);
-                            colors.push(ss);
-                            if (l<=10)
-                                below10 = true;
-                        }
+            var po = result["ccdyn:ConsumableConfigDyn"]["ccdyn:ConsumableInfo"];
+            var colors = [];
+            var below10 = false;
+            if (Array.isArray(po)) 
+                for (var i in po) {
+                    var item = po[i];
+                    if (item["dd:ConsumableTypeEnum"]=="ink") {
+                        var p = "P" + item["dd:ConsumableStation"],
+                            lc = item["dd:ConsumableLabelCode"],
+                            idnc = idn + lc + '.',
+                            d = item["dd:Installation"]["dd:Date"],
+                            l = parseInt(item["dd:ConsumablePercentageLevelRemaining"]),
+                            ci = item["dd:ConsumableIcon"],
+                            s = ci["dd:Shape"],
+                            fc = ci["dd:FillColor"],
+                            rgb = fc["dd:Blue"] | (fc["dd:Green"] << 8) | (fc["dd:Red"] << 16),
+                            n = item["dd:ConsumableSelectibilityNumber"],
+                            rgb = '#' + (0x1000000 + rgb).toString(16).slice(1),
+                            ss = util.format("%s = %s, %s, %d%%, %s, %s, %s",p, lc, d, l, n, rgb, s);
+                            makeState(idnc+'fillPercent', l);
+                            makeState(idnc+'color',rgb);
+                            makeState(idnc+'text',ss);
+                        colors.push(ss);
+                        if (l<=10)
+                            below10 = true;
                     }
-                makeState(idn+'anyBelow10',below10);
-                adapter.log.debug(util.format('HP Printer inks found:%j',colors));
-                callback(null);
-            } 
+                }
+            makeState(idn+'anyBelow10',below10);
+            adapter.log.debug(util.format('HP Printer inks found:%j',colors));
+            callback(null);
         });
     });
 }
@@ -258,7 +256,7 @@ function scanAll() {
         adapter.log.debug(util.format('Would also scan for printer ink'));    
     }
 
-    for(var key in scanList) {
+    for(var key in scanList) { // reset device status, 
         scanList[key].ipHere = false;
         scanList[key].btHere = false;
     }
@@ -353,7 +351,7 @@ function scanAll() {
         makeState('whoHere',whoHere.join(', '));
 
         adapter.log.info(util.format('%d devices here: %j',countHere,whoHere));
-    })
+    });
 
 }
 
@@ -396,23 +394,23 @@ function main() {
         },
         function(callb) {
             async.eachSeries(adapter.config.devices, function(item,callback) {
-                    adapter.log.info(util.format('Init item %j',item));
-                    if (item.name)
-                        item.name = item.name.trim();
-                    if (!item.name || item.name.length<2)
-                        return callback(util.format("Invalid item name '%j', must be at least 2 letters long",item.name));
-                    if (scanList[item.name])
-                        return callback(util.format("Double item name '%s', names cannot be used more than once!", item.name));
-                    item.id = item.name;
-                    item.ip = item.ip ? item.ip.trim() : '';
-                    item.bluetooth = item.bluetooth ? item.bluetooth.trim() : '';
-                    if (item.bluetooth!== '' && !/^..:..:..:..:..:..$/.test(item.bluetooth))
-                        return callback(util.format("Invalid blöoutooth address '%s', 6 hex numbers separated by ':'",item.bluetooth));                
-                    if (item.name.startsWith('HP-') && item.ip.length>1)
-                        item.printer = true;
-                    scanList[item.name] = item;
-                    adapter.log.info(util.format('Init item %s with %j',item.name,item));
-                    callback();  // for test...
+                adapter.log.info(util.format('Init item %j',item));
+                if (item.name)
+                    item.name = item.name.trim();
+                if (!item.name || item.name.length<2)
+                    return callback(util.format("Invalid item name '%j', must be at least 2 letters long",item.name));
+                if (scanList[item.name])
+                    return callback(util.format("Double item name '%s', names cannot be used more than once!", item.name));
+                item.id = item.name;
+                item.ip = item.ip ? item.ip.trim() : '';
+                item.bluetooth = item.bluetooth ? item.bluetooth.trim() : '';
+                if (item.bluetooth!== '' && !/^..:..:..:..:..:..$/.test(item.bluetooth))
+                    return callback(util.format("Invalid bluetooth address '%s', 6 hex numbers separated by ':'",item.bluetooth));                
+                if (item.name.startsWith('HP-') && item.ip.length>1)
+                    item.printer = true;
+                scanList[item.name] = item;
+                adapter.log.info(util.format('Init item %s with %j',item.name,item));
+                callback();  // for test...
         //            createState(item,callback);
             },function(err){
                 if (err)
@@ -426,7 +424,7 @@ function main() {
     ], function(err,result) {
         if (err) {
             adapter.log.warn(util.format('radar initialization finished with error %j, will stop adapter!' ,err));
-            stop(true);
+            return stop(true);
         }
         adapter.log.debug(util.format('radar initialization finished with results %j' ,result));
         adapter.log.info(util.format('radar set use of fping to %s and hci to %s' ,doFping,doHci));
