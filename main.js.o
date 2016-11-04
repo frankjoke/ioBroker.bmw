@@ -23,7 +23,7 @@ const exec =      require('child_process').exec;
 
 var isStopping =    false;
 var scanList =      {};
-var scanDelay =     30*1000; // in ms
+var scanDelay =     30*1000; // in ms = 30 sec
 var scanTimer =     null;
 var printerDelay =  100;
 var printerCount =  0;

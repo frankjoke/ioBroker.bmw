@@ -9,6 +9,11 @@ Er benutzt Ping (und wenn installiert auch fping)
 Will try to use on Windows [http://www.nirsoft.net/utils/bluetooth_viewer.html], let's see
 
 ## Changelog
+### 0.3.3
+* Es werden nur die Objekte erzeugt welche IP oder BT-Adressen haben.
+* Der code verwendet jetzt Promises woimmer möglich und die Verwendung/Abhängigkeit von den Modulen 'request' und 'async' wurde eliminiert. 
+* Der Adapter startet nun auch wenn Noble nicht voll installiert ist, die Noble-BT-LE Scans sind dann einfach nicht vorhanden. 
+
 ### 0.2.1
 * Implementierung von anyBelow10 wo angezeigt wird ob im Drucker irgendeine Farbe auf/unter 10% Füllstand ist.
 * Implementierung von Ausschluß aus whoHere wenn Name mit `-` endet
