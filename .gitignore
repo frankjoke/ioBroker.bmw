@@ -1,3 +1,5 @@
 node_modules
 .idea
 tmp
+bin/bluetoothview/bt?.txt
+bin/bluetoothview/b*.ini

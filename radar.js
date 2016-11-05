@@ -13,6 +13,37 @@
 "use strict";
 const utils   =   require(__dirname + '/lib/utils'); // Get common adapter utils
 const adapter =   utils.adapter('radar');
+const btbindir=   __dirname + '\\bin\\bluetoothview\\';
+
+const util =      require('util');
+const http =      require('http');
+const xml2js =    require('xml2js');
+const ping =      require('ping');
+const fs =        require('fs');
+//const noble =     require('noble'); // will be loaded later because not all machines will have it working
+var noble =        null;
+const exec =      require('child_process').exec;
+
+function _o(obj,level) {    return  util.inspect(obj, false, level || 2, false).replace(/\n/g,' ');}
+
+// function _J(str) { try { return JSON.parse(str); } catch (e) { return {'error':'JSON Parse Error of:'+str}}} 
+
+function wait(time,arg) { return new Promise((res,rej) => setTimeout(res,time,arg))}
+
+function pSeries(obj,fun) { // fun gets(key,obj,resolve,reject)
+    let newValues = [];
+    let promise = Promise.resolve(null);
+
+    for(let key of obj) {
+//        adapter.log.debug(`pSeries key ${_o(key)}`);
+        promise = promise.then(() => 
+            new Promise((resolve,reject) => process.nextTick(fun,key, obj, resolve, reject))
+        ).then(newValue => newValues.push(newValue));
+    }
+    
+    return promise.then(() => newValues);
+}
+
 /*
 function c2pA(f) {
     let context = this;
@@ -40,35 +71,7 @@ function c2pA(f) {
     }
 }
 */
-
-const util =      require('util');
-const http =      require('http');
-const xml2js =    require('xml2js');
-const ping =      require('ping');
-//const noble =     require('noble'); // will be loaded later because not all machines will have it working
-var noble =        null;
-const exec =      require('child_process').exec;
-
-function _o(obj,level) {    return  util.inspect(obj, false, level || 2, false).replace(/\n/g,' ');}
-
-function _J(str) { try { return JSON.parse(str); } catch (e) { return {'error':'JSON Parse Error of:'+str}}} 
-
-function wait(time,arg) { return new Promise((res,rej) => setTimeout(res,time,arg))}
-
-function pSeries(obj,fun) { // fun gets(key,obj,resolve,reject)
-    let newValues = [];
-    let promise = Promise.resolve(null);
-
-    for(let key of obj) {
-//        adapter.log.debug(`pSeries key ${_o(key)}`);
-        promise = promise.then(() => 
-            new Promise((resolve,reject) => process.nextTick(fun,key, obj, resolve, reject))
-        ).then(newValue => newValues.push(newValue));
-    }
-    
-    return promise.then(() => newValues);
-}
-
+/*
 function pRetryP(nretry, fn, arg) {
     return fn(arg).catch(err => { 
 //            logs(`retry: ${retry}, ${_o(err)}`);
@@ -78,36 +81,7 @@ function pRetryP(nretry, fn, arg) {
         return pRetryP(nretry - 1, fn,arg); 
     });
 }
-
-function pGet(url) {
-//    let url = that.url+"control?callback=cb&x=" + Date.now() % 1000000 + "&cmd="+command
-    return new Promise((resolve,reject)=> {
-        adapter.log.debug(`pGet: ${url}`);
-        http.get(url, (res) => {
-            let statusCode = res.statusCode;
-            let contentType = res.headers['content-type'];
-            adapter.log.debug(`res: ${statusCode}, ${contentType}`);
-            let error = null;
-            if (statusCode !== 200) {
-                error = new Error(`Request Failed. Status Code: ${statusCode}`);
-    //              } else if (!/^application\/json/.test(contentType)) {
-    //                error = new Error(`Invalid content-type. Expected application/json but received ${contentType}`);
-            }
-            if (error) {
-                res.resume();                 // consume response data to free up memory
-                return reject(error);
-            }
-            
-            res.setEncoding('utf8');
-            let rawData = '';
-            res.on('data', (chunk) => rawData += chunk);
-            res.on('end', () => setTimeout(resolve,0,rawData));
-        }).on('error', (e) => setTimeout(reject,0,e));
-    });
-}
-
-function pGet2(command) { return pRetryP(2,pGet,command)}
-
+*/
 
 var isStopping =    false;
 const scanList =      new Map();
@@ -164,8 +138,8 @@ function pSetState(id,value) {
     return new Promise((res,rej) => {
         adapter.setState(id,value,true, (err,val) => {
             if (err)
-                return setTimeout(rej,0,err);
-            return setTimeout(res,0,val);
+                return process.nextTick(rej,err);
+            return process.nextTick(res,val);
         });
     });
 }
@@ -266,8 +240,40 @@ function pExec(command) {
     });
 }
 
+function pGet(url,retry) {
+//    adapter.log.info(`pGet retry(${retry}): ${url}`);
+    return (new Promise((resolve,reject)=> {
+//        adapter.log.info(`pGet retry(${retry}): ${url}`);
+        http.get(url, (res) => {
+            let statusCode = res.statusCode;
+            let contentType = res.headers['content-type'];
+            adapter.log.debug(`res: ${statusCode}, ${contentType}`);
+            let error = null;
+            if (statusCode !== 200) {
+                error = new Error(`Request Failed. Status Code: ${statusCode}`);
+    //              } else if (!/^application\/json/.test(contentType)) {
+    //                error = new Error(`Invalid content-type. Expected application/json but received ${contentType}`);
+            }
+            if (error) {
+                res.resume();                 // consume response data to free up memory
+                return reject(error);
+            }
+            
+            res.setEncoding('utf8');
+            let rawData = '';
+            res.on('data', (chunk) => rawData += chunk);
+            res.on('end', () => process.nextTick(resolve,rawData));
+        }).on('error', (e) => process.nextTick(reject,e));
+    })).catch(err => {
+        if (!(retry>0)) throw err;
+        return wait(100,retry -1).then(a => pGet(url,a));
+    });
+}
+
 var doFping = true;
 var doHci = true;
+var doBtv = true;
+
 function scanHP(item) {
     function parseString(body) {
         function parseNumbers(str) {
@@ -278,8 +284,8 @@ function scanHP(item) {
         return new Promise((res,rej) => {
             let parser = new xml2js.Parser({explicitArray:false,valueProcessors:[parseNumbers]});
             parser.parseString(body, (err,result) => {
-                if (err) return setTimeout(rej,0,err);
-                setTimeout(res,0,result);
+                if (err) return process.nextTick(rej,err);
+                process.nextTick(res,result);
             });
         });
     }
@@ -287,9 +293,9 @@ function scanHP(item) {
 
     let idn = item.id+'.';
     let colors = [];
-    let below10 = false;
-
-    return pGet2('http://'+item.ip+'/DevMgmt/ConsumableConfigDyn.xml')
+    let below10 = [];
+//    adapter.log.info(`should call ${item.ip} for printer data`);
+    return pGet('http://'+item.ip+'/DevMgmt/ConsumableConfigDyn.xml',2)
         .then(body => parseString(body.trim()))
         .then(result => pSeries(result["ccdyn:ConsumableConfigDyn"]["ccdyn:ConsumableInfo"], 
             (item,po,res,rej) => {
@@ -310,13 +316,14 @@ function scanHP(item) {
                 let ss = `${p} = ${lc}, ${d}, ${l}%, ${n}, ${rgb}, ${s}`;
                 colors.push(ss);
                 if (l<=10)
-                    below10 = true;
+                    below10.push(lc);
                 makeState(idnc+'fillPercent', l)
                     .then(res => makeState(idnc+'color',rgb))
                     .then(res => makeState(idnc+'text',ss))
                     .then(arg => res(arg),res(null));
             }))
-        .then(arg => makeState(idn+'anyBelow10',below10))
+        .then(arg => makeState(idn+'anyBelow10',below10.length>0))
+        .then(arg => makeState(idn+'whoBelow10',below10.join(', ')))
         .then(arg =>  adapter.log.debug(`HP Printer inks found:${colors.length}`),
             err => adapter.log.debug(`HP Printer could not find info!`));
 }
@@ -331,7 +338,23 @@ function scanAll() {
     for (let item of scanList.values())
         item.ipHere = item.btHere = false;
 
-    Promise.all([
+    Promise.all([ doBtv ?
+        pExec(`${btbindir}bluetoothview /scomma ${btbindir}btf.txt`)
+        .then(stdout => wait(100,stdout))
+        .then(stdout => new Promise((res,rej) => 
+            fs.readFile(`${btbindir}btf.txt`, 'utf8', (err,data) => {
+                if(err)
+                    return rej(err);
+                res(data.toString());
+            })
+            ), err => '')
+        .then(data =>  {
+            for (let item of scanList.values()) 
+                if (data.toUpperCase().indexOf(item.bluetooth)>0) {
+//                    adapter.log.info(`doBtv found  ${item.name}`);
+                    item.btHere = true;              
+                }  
+        }) : wait(10),
         myNoble(scanDelay - 25000)
             .then(data => {
                 let found = 0;
@@ -346,24 +369,27 @@ function scanAll() {
             }, err => false),
         pSeries(scanList.values(), (item,obj,res,rej) => {
 //            let item = obj[key];
-            adapter.log.debug(`item ${_o(item)}`);
+//            adapter.log.info(`item ${_o(item)}`);
 //            adapter.log.debug(`key ${key} obj ${_o(key)} = ${_o(obj[key])}`);
             let all = [];
             if (item.hasIP) 
                 all.push((new Promise((res,rej) => 
                         ping.sys.probe(item.ip,alive => res(alive))))
                     .then(res => {
-                        if (doFping)
+//                        adapter.log.info(`${item.name}:${item.ip} = ${res}`);
+                        if (!res && doFping)
                             return pExec('fping '+item.ip)
-                                .then(stdout => / is alive/.test(stdout) || res,false)
-                        res;
+                                .then(stdout => / is alive/.test(stdout) || res,false);
+                        return res;
                     })
-                    .then(ip => {
-                        if (ip) {
+                    .then(iph => {
+//                        adapter.log.info(`IP ${item.name}:${item.ip} = ${iph}`);
+                        if (iph) {
                             item.ipHere = true;
                             if (item.printer && printerCount===0)
                                 return scanHP(item);
                         }
+                        return iph;
                     })
                 );
             
@@ -375,7 +401,7 @@ function scanAll() {
                             item.btname = stdout.trim();
                             item.btHere = true;
                         }
-                        bth;
+                        return bth;
                     },err => false)
                     .then(bt => item.btHere = bt));               
             
@@ -389,10 +415,13 @@ function scanAll() {
             if (++printerCount >=printerDelay)
                 printerCount = 0;
             whoHere = [];
+            let allhere = [];
             for(let item of scanList.values()) {
+//                adapter.log.info(`item=${_o(item)}:`);
                 const here = item.ipHere || item.btHere;
-                let cnt = item.cnt || -delayAway;
+                let cnt = item.cnt===undefined ? -delayAway : parseInt(item.cnt);
                 let anw = false;
+//                adapter.log.info(`${item.name}:cnt=${cnt}, here=${here}`);
                 if (here) {
                     cnt = cnt<0 ? 0 : cnt+1;
                     anw = true;
@@ -404,6 +433,9 @@ function scanAll() {
                     whoHere.push(item.name);
                 item.anwesend = anw;
                 item.cnt = cnt;
+                if(anw) 
+                    allhere.push(item.name);
+                adapter.log.debug(`${item.name}=${_o(item)}`);
                 const idn = item.id;
                 makeState(idn+'.count',cnt)
                     .then(res => makeState(idn+'.here',anw))
@@ -412,7 +444,9 @@ function scanAll() {
             }
             countHere = whoHere.length;
             whoHere = whoHere.join(', ');
+            allhere = allhere.join(', ');
             return makeState('countHere',countHere)
+                .then(res => makeState('allHere',allhere))
                 .then(res => makeState('whoHere',whoHere))
                 .then(res => adapter.log.info(`${countHere} devices here: ${whoHere}`));
         }, err => adapter.log.warn(`Scan devices returned error: ${_o(err)}`));
@@ -448,7 +482,14 @@ function main() {
 
     adapter.log.info(`radar set to scan every ${adapter.config.scandelay} sec and printers every ${printerDelay} scans.`);
 
-    pExec('!fping 127.0.0.1').then(stdout => / is alive/.test(stdout),false)
+    adapter.log.info(`BT Bin Dir = '${btbindir}'`);
+
+    pExec(`!${btbindir}bluetoothview /scomma ${btbindir}btf.txt`)
+        .then(stdout => true, err => false)
+        .then(result => {
+            doBtv = result; 
+            return pExec('!fping 127.0.0.1').then(r => r,r => r)
+        }).then(stdout => / is alive/.test(stdout),false)
         .then(result => {
             doFping = result;
             return pExec('!hcitool name 12:34:56:78:90:ab');
@@ -459,26 +500,26 @@ function main() {
                 if (item.name)
                     item.name = item.name.trim();
                 if (!item.name || item.name.length<2)
-                    return process.nextTick(res,`Invalid item name '${_o(item.name)}', must be at least 2 letters long`);
+                    adapter.log.warn(`Invalid item name '${_o(item.name)}', must be at least 2 letters long`);
                 if (scanList.has(item.name))
-                    return process.nextTick(res,`Double item name '${item.name}', names cannot be used more than once!`);
-                item.id = item.name;
+                    adapter.log.warn(`Double item name '${item.name}', names cannot be used more than once!`);
+                item.id = item.name.endsWith('-') ? item.name.slice(0,-1) : item.name ;
                 item.ip = item.ip ? item.ip.trim() : '';
-                item.bluetooth = item.bluetooth ? item.bluetooth.trim() : '';
+                item.bluetooth = item.bluetooth ? item.bluetooth.trim().toUpperCase() : '';
                 if (item.bluetooth!== '' && !/^..:..:..:..:..:..$/.test(item.bluetooth))
-                    return process.nextTick(res,`Invalid bluetooth address '${item.bluetooth}', 6 hex numbers separated by ':'`);                
+                    adapter.log.warn(`Invalid bluetooth address '${item.bluetooth}', 6 hex numbers separated by ':'`);                
                 item.printer =  item.ip && item.name.startsWith('HP-');
                 item.hasIP = item.ip && item.ip.length>2;
                 item.hasBT = item.bluetooth && item.bluetooth.length===17;
                 if (!(item.hasIP || item.hasBT))
-                    return process.nextTick(res,`Invalid Device should have IP or BT set ${_o(item)}`);                
+                    return process.nextTick(res,adapter.log.warn(`Invalid Device should have IP or BT set ${_o(item)}`));                
                 scanList.set(item.name,item);
                 adapter.log.info(`Init item ${item.name} with ${_o(item)}`);
                 process.nextTick(res,item);
             });
         }).then(res => {
             adapter.log.info(`radar adapter initialized ${scanList.size} devices.`);
-            adapter.log.info(`radar set use of fping to ${doFping} and doHci to ${doHci}.`);
+            adapter.log.info(`radar set use of fping(${doFping}), doHci(${doHci}) and doBtv(${doBtv}).`);
             scanTimer = setInterval(scanAll,scanDelay);
             scanAll(); // scan first time
         }).catch(err => {
