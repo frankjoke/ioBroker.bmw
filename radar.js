@@ -189,6 +189,8 @@ function myNoble(len) {
 //        adapter.log.debug(util.format('Noble found %j',idf));
         return idf;
     }
+
+    adapter.log.debug(`Noble= ${noble} start ${len}`);
     
     let idf = {};
     if (nobleRunning) 
@@ -210,7 +212,7 @@ function myNoble(len) {
                     return res(stopNoble(idf));
                 
                 var idt = (per.advertisement && per.advertisement.localName )? per.advertisement.localName : "NaN";
-                idf[per.address] = {
+                idf[per.address.toUpperCase()] = {
                     address: per.address,
                     name: idt,
                     rssi: per.rssi
