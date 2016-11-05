@@ -395,7 +395,7 @@ function scanAll() {
                     })
                 );
             
-            if (doHci && item.hasBT && !item.bluetooth.startsWith('7c:2f:80')) 
+            if (doHci && item.hasBT && !item.bluetooth.startsWith('7C:2F:80')) 
                 all.push(pExec('hcitool name ' + item.bluetooth)
                     .then(stdout => {
                         let bth = stdout > "";
@@ -431,12 +431,12 @@ function scanAll() {
                     cnt = cnt>0 ? -1 : cnt -1;
                     anw = cnt >= -delayAway;
                 }
-                if (anw && !item.name.endsWith('-'))
-                    whoHere.push(item.name);
+                if (anw && item.name==item.id)
+                    whoHere.push(item.id);
                 item.anwesend = anw;
                 item.cnt = cnt;
                 if(anw) 
-                    allhere.push(item.name);
+                    allhere.push(item.id);
                 adapter.log.debug(`${item.name}=${_o(item)}`);
                 const idn = item.id;
                 makeState(idn+'.count',cnt)
