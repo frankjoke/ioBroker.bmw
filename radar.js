@@ -431,12 +431,13 @@ function scanAll() {
                     cnt = cnt>0 ? -1 : cnt -1;
                     anw = cnt >= -delayAway;
                 }
-                if (anw && item.name==item.id)
-                    whoHere.push(item.id);
                 item.anwesend = anw;
                 item.cnt = cnt;
-                if(anw) 
+                if(anw) {
                     allhere.push(item.id);
+                    if (item.name==item.id)
+                        whoHere.push(item.id);
+                }
                 adapter.log.debug(`${item.name}=${_o(item)}`);
                 const idn = item.id;
                 makeState(idn+'.count',cnt)
