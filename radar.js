@@ -68,7 +68,7 @@ function pSeriesP(obj,promfn,delay) { // fun gets(item) and returns a promise
         f(item);
     return p.then(() => nv);
 }
-/*
+
 function pSeriesF(obj,fun,delay) { // fun gets(item) and returns a value
     delay = delay || 0;
     var p = Promise.resolve();
@@ -78,7 +78,7 @@ function pSeriesF(obj,fun,delay) { // fun gets(item) and returns a value
         f(item);
     return p.then(() => nv);
 }
-*/
+
 function c2pP(f) {
 //    _D(`c2pP: ${_o(f)}`);
     return function () {
@@ -300,7 +300,6 @@ function scanHP(item) {
             return str;
         }
 
-//        let parser = new xml2js.Parser({explicitArray:false,valueProcessors:[parseNumbers]});
         return (c2pP(new xml2js.Parser({explicitArray:false,valueProcessors:[parseNumbers]})
             .parseString))(body);
     }
@@ -355,6 +354,10 @@ function scanAll() {
         pExec(`${btbindir}bluetoothview /scomma ${btbindir}btf.txt`)
         .then(stdout => wait(100,stdout))
         .then(stdout => c2pP(fs.readFile)(`${btbindir}btf.txt`, 'utf8'))
+        .then(data => {
+            try { fs.unlinkSync(`${btbindir}btf.txt`); } catch(e) { return ''; }
+            return data;
+            })
 /*
         .then(stdout => new Promise((res,rej) => 
             fs.readFile(`${btbindir}btf.txt`, 'utf8', (err,data) => {
@@ -513,26 +516,26 @@ function main() {
         }).then(res => true, err =>  false)
         .then(res => {
             doHci = res;
-            return pSeries(adapter.config.devices, (item,res,rej) => {
+            return pSeriesF(adapter.config.devices, item => {
                 if (item.name)
                     item.name = item.name.trim();
                 if (!item.name || item.name.length<2)
-                    adapter.log.warn(`Invalid item name '${_o(item.name)}', must be at least 2 letters long`);
+                    return adapter.log.warn(`Invalid item name '${_o(item.name)}', must be at least 2 letters long`);
                 if (scanList.has(item.name))
-                    adapter.log.warn(`Double item name '${item.name}', names cannot be used more than once!`);
+                    return adapter.log.warn(`Double item name '${item.name}', names cannot be used more than once!`);
                 item.id = item.name.endsWith('-') ? item.name.slice(0,-1) : item.name ;
                 item.ip = item.ip ? item.ip.trim() : '';
                 item.bluetooth = item.bluetooth ? item.bluetooth.trim().toUpperCase() : '';
-                if (item.bluetooth!== '' && !/^..:..:..:..:..:..$/.test(item.bluetooth))
+                item.hasBT = /^([0-9A-F]{2}\:){5}[0-9A-F]{2}$/.test(item.bluetooth); 
+                if (item.bluetooth!== '' && !item.hasBT)
                     adapter.log.warn(`Invalid bluetooth address '${item.bluetooth}', 6 hex numbers separated by ':'`);                
                 item.printer =  item.ip && item.name.startsWith('HP-');
                 item.hasIP = item.ip && item.ip.length>2;
-                item.hasBT = item.bluetooth && item.bluetooth.length===17;
                 if (!(item.hasIP || item.hasBT))
-                    return _N(res,adapter.log.warn(`Invalid Device should have IP or BT set ${_o(item)}`));                
+                    return adapter.log.warn(`Invalid Device should have IP or BT set ${_o(item)}`);                
                 scanList.set(item.name,item);
                 _I(`Init item ${item.name} with ${_o(item)}`);
-                _N(res,item.id);
+                return item.id;
             },50);
         }).then(res => {
             _I(`radar adapter initialized ${scanList.size} devices.`);
