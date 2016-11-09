@@ -352,21 +352,13 @@ function scanAll() {
 
     Promise.all([ doBtv ?
         pExec(`${btbindir}bluetoothview /scomma ${btbindir}btf.txt`)
-        .then(stdout => wait(100,stdout))
+        .then(stdout => wait(300,stdout))
         .then(stdout => c2pP(fs.readFile)(`${btbindir}btf.txt`, 'utf8'))
+        .then(data => wait(100,data))
         .then(data => {
             try { fs.unlinkSync(`${btbindir}btf.txt`); } catch(e) { return ''; }
             return data;
             })
-/*
-        .then(stdout => new Promise((res,rej) => 
-            fs.readFile(`${btbindir}btf.txt`, 'utf8', (err,data) => {
-                if(err)
-                    return rej(err);
-                res(data.toString());
-            })
-            ), err => '')
-*/
         .then(data =>  {
             for (let item of scanList.values()) 
                 if (data.toUpperCase().indexOf(item.bluetooth)>0) {
