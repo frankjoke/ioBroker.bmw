@@ -27,60 +27,95 @@ const exec =      require('child_process').exec;
 function _o(obj,level) {    return  util.inspect(obj, false, level || 2, false).replace(/\n/g,' ');}
 
 // function _J(str) { try { return JSON.parse(str); } catch (e) { return {'error':'JSON Parse Error of:'+str}}} 
+const _N = (a,b,c,d,e) => setTimeout(a,0,b,c,d,e);
+function _D(l,v) { adapter.log.debug(l); return v === undefined ? l : v; }
+function _I(l,v) { adapter.log.info(l); return v === undefined ? l : v; }
+
 
 function wait(time,arg) { return new Promise((res,rej) => setTimeout(res,time,arg))}
 
-function pSeries(obj,fun) { // fun gets(key,obj,resolve,reject)
-    let newValues = [];
-    let promise = Promise.resolve(null);
-
-    for(let key of obj) {
-//        adapter.log.debug(`pSeries key ${_o(key)}`);
-        promise = promise.then(() => 
-            new Promise((resolve,reject) => process.nextTick(fun,key, obj, resolve, reject))
-        ).then(newValue => newValues.push(newValue));
-    }
+function pSeries(obj,fun,delay) { // fun gets(item,resolve,reject) and behaves like a promise
+    delay = delay || 0;
+    var p = Promise.resolve();
+    const   nv = [],
+            f = (k) => p = p.then(() => (new Promise((resolve,reject) => fun(k, resolve, reject)))
+                    .then(res => wait(delay,res,nv.push(res))));
+    for(var item of obj) 
+        f(item);
     
-    return promise.then(() => newValues);
+    return p.then(() => nv);
 }
 
 /*
-function c2pA(f) {
-    let context = this;
-    return function () {
-        let fArgs = Array.prototype.slice.call(arguments);
-        let paramLength = f.length;
-        let args = [];
-
-        for (var i = 0; i < paramLength -1; i++) {
-            if(i < fArgs.length){
-                args.push(fArgs[i])
-            }else{
-                args.push(undefined);
-            }
-        }
-
-        return new Promise((res, rej) => {
-            args.push(function (err, result) {
-                if (err) setTimeout(rej,0,err);
-                else setTimeout(res,0,result);
-            });
-
-            f.apply(context, args);
-        });
-    }
+function pSeries(obj,fun,delay) { // fun gets(item,resolve,reject) and behaves like a promise
+    delay = delay || 0;
+    var p = Promise.resolve();
+    const   nv = [],
+            f = (k) => p = p.then(() => (new Promise((resolve,reject) => fun(k, resolve, reject)))
+                    .then(res => wait(delay,nv.push(res))));
+    for(var item of obj) 
+        f(item);
+    
+    return p.then(() => nv);
 }
 */
+function pSeriesP(obj,promfn,delay) { // fun gets(item) and returns a promise
+    delay = delay || 0;
+    var p = Promise.resolve();
+    const   nv = [],
+            f = (k) => p = p.then(() => promfn(k).then(res => wait(delay,nv.push(res))));
+    for(var item of obj) 
+        f(item);
+    return p.then(() => nv);
+}
+/*
+function pSeriesF(obj,fun,delay) { // fun gets(item) and returns a value
+    delay = delay || 0;
+    var p = Promise.resolve();
+    const   nv = [],
+            f = (k) => p = p.then(() => Promise.resolve(fun(k)).then(res => wait(delay,nv.push(res))));
+    for(var item of obj) 
+        f(item);
+    return p.then(() => nv);
+}
+*/
+function c2pP(f) {
+//    _D(`c2pP: ${_o(f)}`);
+    return function () {
+        const args = Array.prototype.slice.call(arguments);
+        return new Promise((res, rej) => {
+            args.push((err, result) => (err && _N(rej,err)) || _N(res,result));
+            f.apply(this, args);
+        });
+    };
+}
+
+function c1pP(f) {
+    return function () {
+        const args = Array.prototype.slice.call(arguments);
+        return new Promise((res, rej) => {
+            args.push((result) => _N(res,result));
+            f.apply(this, args);
+        });
+    };
+}
 /*
 function pRetryP(nretry, fn, arg) {
     return fn(arg).catch(err => { 
-//            logs(`retry: ${retry}, ${_o(err)}`);
-        if (nretry <= 0) {
+        if (nretry <= 0) 
             throw err;
-        }
         return pRetryP(nretry - 1, fn,arg); 
     });
 }
+
+function pRepeatP(nretry, fn, arg) {
+    return fn(arg).then(() => Promise.reject()).catch(err => { 
+        if (nretry <= 0)
+            return Promise.resolve();
+        return pRepeatP(nretry - 1, fn,arg); 
+    });
+}
+
 */
 
 var isStopping =    false;
@@ -112,7 +147,7 @@ adapter.on('unload', () => stop(false));
 
 function processMessage(obj) {
     if (obj && obj.command) {
-        adapter.log.debug(`process Message ${_o(obj)}`);
+        _D(`process Message ${_o(obj)}`);
         switch (obj.command) {
             case 'ping': {
                 // Try to connect to mqtt broker
@@ -132,46 +167,38 @@ function processMessage(obj) {
     });    
 }
 
-const objects = new Map();
 
-function pSetState(id,value) {
-    return new Promise((res,rej) => {
-        adapter.setState(id,value,true, (err,val) => {
-            if (err)
-                return process.nextTick(rej,err);
-            return process.nextTick(res,val);
-        });
-    });
+const objects = new Map();
+//const pSetState = c2pP(adapter.setState);
+function pSetState(id,val,ack) {
+//    _D(`pSetState: ${id} = ${val} with ${ack}`);
+    return c2pP(adapter.setState)(id,val,ack ? true : false);
 }
 
 function makeState(id,value) {
     if (objects.has(id))
-        return pSetState(id,value);
-    return new Promise((res,rej) => {
-        var st = {
-            common: {
-                name:  id, // You can add here some description
-                read:  true,
-                write: false,
-                state: 'state',
-                role:  'value',
-                type:  typeof value
-            },
-            type: 'state',
-            _id: id
-        };
-        if (id.endsWith('Percent'))
-            st.common.unit = "%";
-        adapter.extendObject(id,st,function(err,obj) {
-                if(err)
-                    rej(err);
-                else {
-                    objects.set(id,obj);
-                    adapter.log.debug(`created state ${id} with ${value}`)
-                    res(pSetState(id,value));
-                }
-        });
-    });
+        return pSetState(id,value,true);
+    var st = {
+        common: {
+            name:  id, // You can add here some description
+            read:  true,
+            write: false,
+            state: 'state',
+            role:  'value',
+            type:  typeof value
+        },
+        type: 'state',
+        _id: id
+    };
+    if (id.endsWith('Percent'))
+        st.common.unit = "%";
+    return  c2pP(adapter.extendObject)(id,st)
+        .then(x => {
+            objects.set(id,x);
+           return pSetState(id,value,false);
+        })
+        .catch(err => _D(`MS ${_o(err)}:=extend`,id));
+
 }
 
 
@@ -186,47 +213,36 @@ function myNoble(len) {
         nobleRunning = null;
         noble.removeAllListeners('discover');
         noble.stopScanning();
-//        adapter.log.debug(util.format('Noble found %j',idf));
+//        _D(util.format('Noble found %j',idf));
         return idf;
     }
 
-    adapter.log.debug(`Noble= ${noble} start ${len}`);
+    _D(`Noble= ${noble} start ${len}`);
     
     let idf = {};
-    if (nobleRunning) 
-        clearTimeout(nobleRunning);
+    if (nobleRunning) clearTimeout(nobleRunning);
     nobleRunning = null;
 
+    if (!noble)     return Promise.resolve({});
+    if (isStopping) return Promise.reject('Stopping.')
+    if (noble.state !== 'poweredOn') return Promise.reject('Noble not powered ON!');
+
     return new Promise((res,rej) => {
-        if (!noble) 
-            return process.nextTick(res,{});
+        noble.on('discover', function(per){
+            if (isStopping) 
+                return res(stopNoble(idf));
+            
+            var idt = (per.advertisement && per.advertisement.localName )? per.advertisement.localName : "NaN";
+            idf[per.address.toUpperCase()] = {
+                address: per.address,
+                name: idt,
+                rssi: per.rssi
+            };
+        });
 
-        if (isStopping)
-            return process.nextTick(rej,"Stopping");
-        
-        if(noble.state !== 'poweredOn') 
-            return process.nextTick(rej,'Noble not powered ON!');
-        try {    
-            noble.on('discover', function(per){
-                if (isStopping) 
-                    return res(stopNoble(idf));
-                
-                var idt = (per.advertisement && per.advertisement.localName )? per.advertisement.localName : "NaN";
-                idf[per.address.toUpperCase()] = {
-                    address: per.address,
-                    name: idt,
-                    rssi: per.rssi
-                };
-            });
-
-            noble.startScanning([], true);
-        } catch(e) {
-            noble = null;
-            return process.nextTick(res,{});
-        }
+        noble.startScanning([], true);
         nobleRunning = setTimeout(() => res(stopNoble(idf)), len);
-
-    })
+    }).catch(err => _I(`Noble scan Err ${_o(err)}`,err, noble = null));
 }
 
 function pExec(command) {
@@ -243,13 +259,13 @@ function pExec(command) {
 }
 
 function pGet(url,retry) {
-//    adapter.log.info(`pGet retry(${retry}): ${url}`);
+//    _I(`pGet retry(${retry}): ${url}`);
     return (new Promise((resolve,reject)=> {
-//        adapter.log.info(`pGet retry(${retry}): ${url}`);
+//        _I(`pGet retry(${retry}): ${url}`);
         http.get(url, (res) => {
             let statusCode = res.statusCode;
             let contentType = res.headers['content-type'];
-            adapter.log.debug(`res: ${statusCode}, ${contentType}`);
+            _D(`res: ${statusCode}, ${contentType}`);
             let error = null;
             if (statusCode !== 200) {
                 error = new Error(`Request Failed. Status Code: ${statusCode}`);
@@ -264,8 +280,8 @@ function pGet(url,retry) {
             res.setEncoding('utf8');
             let rawData = '';
             res.on('data', (chunk) => rawData += chunk);
-            res.on('end', () => process.nextTick(resolve,rawData));
-        }).on('error', (e) => process.nextTick(reject,e));
+            res.on('end', () => _N(resolve,rawData));
+        }).on('error', (e) => _N(reject,e));
     })).catch(err => {
         if (!(retry>0)) throw err;
         return wait(100,retry -1).then(a => pGet(url,a));
@@ -283,51 +299,46 @@ function scanHP(item) {
                 str = str % 1 === 0 ? parseInt(str) : parseFloat(str);
             return str;
         }
-        return new Promise((res,rej) => {
-            let parser = new xml2js.Parser({explicitArray:false,valueProcessors:[parseNumbers]});
-            parser.parseString(body, (err,result) => {
-                if (err) return process.nextTick(rej,err);
-                process.nextTick(res,result);
-            });
-        });
+
+//        let parser = new xml2js.Parser({explicitArray:false,valueProcessors:[parseNumbers]});
+        return (c2pP(new xml2js.Parser({explicitArray:false,valueProcessors:[parseNumbers]})
+            .parseString))(body);
     }
 
 
     let idn = item.id+'.';
     let colors = [];
     let below10 = [];
-//    adapter.log.info(`should call ${item.ip} for printer data`);
+//    _I(`should call ${item.ip} for printer data`);
     return pGet('http://'+item.ip+'/DevMgmt/ConsumableConfigDyn.xml',2)
         .then(body => parseString(body.trim()))
-        .then(result => pSeries(result["ccdyn:ConsumableConfigDyn"]["ccdyn:ConsumableInfo"], 
-            (item,po,res,rej) => {
-//                    adapter.log.debug(`parser ${_o(i)} = ${_o(po)}`);
-                if (item["dd:ConsumableTypeEnum"]!="ink")
-                    return process.nextTick(res); 
-                let p = "P" + item["dd:ConsumableStation"],
-                    lc = item["dd:ConsumableLabelCode"],
-                    idnc = idn + lc + '.',
-                    d = item["dd:Installation"]["dd:Date"],
-                    l = parseInt(item["dd:ConsumablePercentageLevelRemaining"]),
-                    ci = item["dd:ConsumableIcon"],
-                    s = ci["dd:Shape"],
-                    fc = ci["dd:FillColor"],
-                    rgb = fc["dd:Blue"] | (fc["dd:Green"] << 8) | (fc["dd:Red"] << 16),
-                    n = item["dd:ConsumableSelectibilityNumber"];
-                rgb = '#' + (0x1000000 + rgb).toString(16).slice(1);
-                let ss = `${p} = ${lc}, ${d}, ${l}%, ${n}, ${rgb}, ${s}`;
-                colors.push(ss);
-                if (l<=10)
-                    below10.push(lc);
-                makeState(idnc+'fillPercent', l)
-                    .then(res => makeState(idnc+'color',rgb))
-                    .then(res => makeState(idnc+'text',ss))
-                    .then(arg => res(arg),res(null));
-            }))
+        .then(result => pSeriesP(result["ccdyn:ConsumableConfigDyn"]["ccdyn:ConsumableInfo"], item => {
+//                    _D(`parser ${item["dd:ConsumableTypeEnum"]}`);
+            if (item["dd:ConsumableTypeEnum"]!="ink")
+                return Promise.resolve('No Ink'); 
+            let p = "P" + item["dd:ConsumableStation"],
+                lc = item["dd:ConsumableLabelCode"],
+                idnc = idn + lc + '.',
+                d = item["dd:Installation"]["dd:Date"],
+                l = parseInt(item["dd:ConsumablePercentageLevelRemaining"]),
+                ci = item["dd:ConsumableIcon"],
+                s = ci["dd:Shape"],
+                fc = ci["dd:FillColor"],
+                rgb = fc["dd:Blue"] | (fc["dd:Green"] << 8) | (fc["dd:Red"] << 16),
+                n = item["dd:ConsumableSelectibilityNumber"];
+            rgb = '#' + (0x1000000 + rgb).toString(16).slice(1);
+            let ss = `${p} = ${lc}, ${d}, ${l}%, ${n}, ${rgb}, ${s}`;
+            colors.push(ss);
+            if (l<=10)
+                below10.push(lc);
+            return makeState(idnc+'fillPercent', l)
+                .then(res => makeState(idnc+'color',rgb))
+                .then(res => makeState(idnc+'text',ss));
+        })
         .then(arg => makeState(idn+'anyBelow10',below10.length>0))
-        .then(arg => makeState(idn+'whoBelow10',below10.join(', ')))
-        .then(arg =>  adapter.log.debug(`HP Printer inks found:${colors.length}`),
-            err => adapter.log.debug(`HP Printer could not find info!`));
+        .then(arg => makeState(_D(idn+'whoBelow10'),below10.join(', ')))
+        .then(arg =>  _D(`HP Printer inks found:${colors.length}`))
+        .catch(err => _D(`HP Printer could not find info! Err: ${_o(err)}`)));
 }
 
 
@@ -335,7 +346,7 @@ function scanAll() {
     if (isStopping) // do not start scan if stopping...
         return;
     
-    adapter.log.debug(`Would now start scan for devices! ${printerCount===0 ? 'Would also scan for printer ink now!' :'printerCount='+printerCount}`);
+    _D(`Would now start scan for devices! ${printerCount===0 ? 'Would also scan for printer ink now!' :'printerCount='+printerCount}`);
 
     for (let item of scanList.values())
         item.ipHere = item.btHere = false;
@@ -343,6 +354,8 @@ function scanAll() {
     Promise.all([ doBtv ?
         pExec(`${btbindir}bluetoothview /scomma ${btbindir}btf.txt`)
         .then(stdout => wait(100,stdout))
+        .then(stdout => c2pP(fs.readFile)(`${btbindir}btf.txt`, 'utf8'))
+/*
         .then(stdout => new Promise((res,rej) => 
             fs.readFile(`${btbindir}btf.txt`, 'utf8', (err,data) => {
                 if(err)
@@ -350,10 +363,11 @@ function scanAll() {
                 res(data.toString());
             })
             ), err => '')
+*/
         .then(data =>  {
             for (let item of scanList.values()) 
                 if (data.toUpperCase().indexOf(item.bluetooth)>0) {
-//                    adapter.log.info(`doBtv found  ${item.name}`);
+//                    _I(`doBtv found  ${item.name}`);
                     item.btHere = true;              
                 }  
         }) : wait(10),
@@ -366,29 +380,29 @@ function scanAll() {
                         ++found;
                     }
                 }
-                adapter.log.debug(`Noble found ${found} from returned ${Object.keys(data).length}:${_o(data)}`);
+                _D(`Noble found ${found} from returned ${Object.keys(data).length}:${_o(data)}`);
                 return found;
             }, err => false),
-        pSeries(scanList.values(), (item,obj,res,rej) => {
+        pSeries(scanList.values(), (item,res,rej) => {
 //            let item = obj[key];
-//            adapter.log.info(`item ${_o(item)}`);
-//            adapter.log.debug(`key ${key} obj ${_o(key)} = ${_o(obj[key])}`);
+//            _I(`item ${_o(item)}`);
+//            _D(`key ${key} obj ${_o(key)} = ${_o(obj[key])}`);
             let all = [];
             if (item.hasIP) 
                 all.push((new Promise((res,rej) => 
                         ping.sys.probe(item.ip,alive => res(alive))))
                     .then(res => {
-//                        adapter.log.info(`${item.name}:${item.ip} = ${res}`);
+//                        _I(`${item.name}:${item.ip} = ${res}`);
                         if (!res && doFping)
                             return pExec('fping '+item.ip)
                                 .then(stdout => / is alive/.test(stdout) || res,false);
                         return res;
                     })
                     .then(iph => {
-//                        adapter.log.info(`IP ${item.name}:${item.ip} = ${iph}`);
+//                        _I(`IP ${item.name}:${item.ip} = ${iph}`);
                         if (iph) {
                             item.ipHere = true;
-                            if (item.printer && printerCount===0)
+                            if (item.printer && printerCount>=0)
                                 return scanHP(item);
                         }
                         return iph;
@@ -410,20 +424,20 @@ function scanAll() {
             all.push(wait(100));
             Promise.all(all)
                 .then(obj => res(item.name), 
-                    err => res(`err in ${item.name}`));
-        }).then(res => res, err => {adapter.log.debug(`err ${_o(err)}`); return 'err';})
+                    err => res(`err in ${item.name}: ${_o(err)}`));
+        },50).then(res => res, err => _D(`err ${_o(err)}`,err))
     ]).then(res => {
-//            adapter.log.debug(`Promise all  returned ${res}  ${res}:${_o(res)}`);
+//            _D(`Promise all  returned ${res}  ${res}:${_o(res)}`);
             if (++printerCount >=printerDelay)
                 printerCount = 0;
             whoHere = [];
             let allhere = [];
             for(let item of scanList.values()) {
-//                adapter.log.info(`item=${_o(item)}:`);
+//                _I(`item=${_o(item)}:`);
                 const here = item.ipHere || item.btHere;
                 let cnt = item.cnt===undefined ? -delayAway : parseInt(item.cnt);
                 let anw = false;
-//                adapter.log.info(`${item.name}:cnt=${cnt}, here=${here}`);
+//                _I(`${item.name}:cnt=${cnt}, here=${here}`);
                 if (here) {
                     cnt = cnt<0 ? 0 : cnt+1;
                     anw = true;
@@ -438,7 +452,7 @@ function scanAll() {
                     if (item.name==item.id)
                         whoHere.push(item.id);
                 }
-                adapter.log.debug(`${item.name}=${_o(item)}`);
+                _D(`${item.name}=${_o(item)}`);
                 const idn = item.id;
                 makeState(idn+'.count',cnt)
                     .then(res => makeState(idn+'.here',anw))
@@ -451,7 +465,7 @@ function scanAll() {
             return makeState('countHere',countHere)
                 .then(res => makeState('allHere',allhere))
                 .then(res => makeState('whoHere',whoHere))
-                .then(res => adapter.log.info(`${countHere} devices here: ${whoHere}`));
+                .then(res => _I(`${countHere} devices here: ${whoHere}`));
         }, err => adapter.log.warn(`Scan devices returned error: ${_o(err)}`));
 }
 
@@ -483,9 +497,9 @@ function main() {
         adapter.config.printerdelay = 100;
     printerDelay = adapter.config.printerdelay;
 
-    adapter.log.info(`radar set to scan every ${adapter.config.scandelay} sec and printers every ${printerDelay} scans.`);
+    _I(`radar set to scan every ${adapter.config.scandelay} sec and printers every ${printerDelay} scans.`);
 
-    adapter.log.info(`BT Bin Dir = '${btbindir}'`);
+    _I(`BT Bin Dir = '${btbindir}'`);
 
     pExec(`!${btbindir}bluetoothview /scomma ${btbindir}btf.txt`)
         .then(stdout => true, err => false)
@@ -499,7 +513,7 @@ function main() {
         }).then(res => true, err =>  false)
         .then(res => {
             doHci = res;
-            return pSeries(adapter.config.devices, (item,obj,res,rej) => {
+            return pSeries(adapter.config.devices, (item,res,rej) => {
                 if (item.name)
                     item.name = item.name.trim();
                 if (!item.name || item.name.length<2)
@@ -515,14 +529,14 @@ function main() {
                 item.hasIP = item.ip && item.ip.length>2;
                 item.hasBT = item.bluetooth && item.bluetooth.length===17;
                 if (!(item.hasIP || item.hasBT))
-                    return process.nextTick(res,adapter.log.warn(`Invalid Device should have IP or BT set ${_o(item)}`));                
+                    return _N(res,adapter.log.warn(`Invalid Device should have IP or BT set ${_o(item)}`));                
                 scanList.set(item.name,item);
-                adapter.log.info(`Init item ${item.name} with ${_o(item)}`);
-                process.nextTick(res,item);
-            });
+                _I(`Init item ${item.name} with ${_o(item)}`);
+                _N(res,item.id);
+            },50);
         }).then(res => {
-            adapter.log.info(`radar adapter initialized ${scanList.size} devices.`);
-            adapter.log.info(`radar set use of fping(${doFping}), doHci(${doHci}) and doBtv(${doBtv}).`);
+            _I(`radar adapter initialized ${scanList.size} devices.`);
+            _I(`radar set use of fping(${doFping}), doHci(${doHci}) and doBtv(${doBtv}).`);
             scanTimer = setInterval(scanAll,scanDelay);
             scanAll(); // scan first time
         }).catch(err => {
