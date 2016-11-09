@@ -384,8 +384,6 @@ function scanAll() {
                 return found;
             }, err => false),
         pSeries(scanList.values(), (item,res,rej) => {
-//            let item = obj[key];
-//            _I(`item ${_o(item)}`);
 //            _D(`key ${key} obj ${_o(key)} = ${_o(obj[key])}`);
             let all = [];
             if (item.hasIP) 
