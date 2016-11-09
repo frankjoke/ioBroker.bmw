@@ -400,7 +400,7 @@ function scanAll() {
 //                        _I(`IP ${item.name}:${item.ip} = ${iph}`);
                         if (iph) {
                             item.ipHere = true;
-                            if (item.printer && printerCount>=0)
+                            if (item.printer && printerCount===0)
                                 return scanHP(item);
                         }
                         return iph;
@@ -430,7 +430,8 @@ function scanAll() {
                 printerCount = 0;
             whoHere = [];
             let allhere = [];
-            for(let item of scanList.values()) {
+            return pSeriesP(scanList.values(),(item) => {
+//            for(let item of scanList.values()) {
 //                _I(`item=${_o(item)}:`);
                 const here = item.ipHere || item.btHere;
                 let cnt = item.cnt===undefined ? -delayAway : parseInt(item.cnt);
@@ -450,20 +451,21 @@ function scanAll() {
                     if (item.name==item.id)
                         whoHere.push(item.id);
                 }
-                _D(`${item.name}=${_o(item)}`);
+                _D(`${item.id}=${_o(item)}`);
                 const idn = item.id;
-                makeState(idn+'.count',cnt)
+                return makeState(idn+'.count',cnt)
                     .then(res => makeState(idn+'.here',anw))
                     .then(res => item.hasIP ? makeState(idn+'.ipHere',item.ipHere) : false)
                     .then(res => item.hasBT ? makeState(idn+'.btHere',item.btHere) : false);
-            }
-            countHere = whoHere.length;
-            whoHere = whoHere.join(', ');
-            allhere = allhere.join(', ');
-            return makeState('countHere',countHere)
-                .then(res => makeState('allHere',allhere))
-                .then(res => makeState('whoHere',whoHere))
-                .then(res => _I(`${countHere} devices here: ${whoHere}`));
+            }).then(() => {
+                countHere = whoHere.length;
+                whoHere = whoHere.join(', ');
+                allhere = allhere.join(', ');
+                return makeState('countHere',countHere)
+                    .then(res => makeState('allHere',allhere))
+                    .then(res => makeState('whoHere',whoHere))
+                    .then(res => _I(`ScanAll: ${countHere} devices here: ${whoHere}`));
+            });
         }, err => adapter.log.warn(`Scan devices returned error: ${_o(err)}`));
 }
 
