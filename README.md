@@ -13,6 +13,9 @@ Wenn ein Name mit '-' endet wird er nicht zu whoHere dazugerechnet, erscheint ab
 Wenn ein Gerät eine IP-Adresse hat und der Name mit 'HP-' beginnt wird versucht alle 500 scans (einstellbar) den Tiuntenfüllstand vom HP-Drucker auszulesen. 
 
 ## Changelog
+### 0-4-2
+*   Bug fixes to 0.4.1
+
 ### 0.4.1 
 * Habe für Windows 'Bluetoothview' integriert. Damit ist es auch ohne Noble möglich BT-Devices zu scannen.
 * BT LE (wie G-Tags) funktionieren leider nicht damit. Unter Umständen muss das Gerät 'gekoppelt' werden.
