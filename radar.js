@@ -535,7 +535,7 @@ function main() {
             },50);
         }).then(res => {
             _I(`radar adapter initialized ${scanList.size} devices.`);
-            _I(`radar set use of fping(${doFping}), doHci(${doHci}) and doBtv(${doBtv}).`);
+            _I(`radar set use of noble(${!!noble}), fping(${doFping}), doHci(${doHci}) and doBtv(${doBtv}).`);
             scanTimer = setInterval(scanAll,scanDelay);
             return scanAll(); // scan first time and generate states if they do not exist yet
         }).then(res => c2pP(adapter.objects.getObjectList)({startkey: ain, endkey: ain + '\u9999'})
