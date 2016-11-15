@@ -30,6 +30,7 @@ function _o(obj,level) {    return  util.inspect(obj, false, level || 2, false).
 const _N = (a,b,c,d,e) => setTimeout(a,0,b,c,d,e);
 function _D(l,v) { adapter.log.debug(l); return v === undefined ? l : v; }
 function _I(l,v) { adapter.log.info(l); return v === undefined ? l : v; }
+function _W(l,v) { adapter.log.warn(l); return v === undefined ? l : v; }
 
 
 function wait(time,arg) { return new Promise((res,rej) => setTimeout(res,time,arg))}
@@ -134,7 +135,7 @@ function stop(dostop) {
     if (scanTimer)
         clearInterval(scanTimer);
     scanTimer = null;
-    adapter.log.warn('Adapter disconnected and stopped');
+    _W('Adapter disconnected and stopped');
     if (dostop)
         adapter.stop();
 } 
@@ -178,6 +179,7 @@ function pSetState(id,val,ack) {
 function makeState(id,value) {
     if (objects.has(id))
         return pSetState(id,value,true);
+    _D(`Make State ${id} and set value to '${_o(value)}'`) ///TC
     var st = {
         common: {
             name:  id, // You can add here some description
@@ -350,7 +352,7 @@ function scanAll() {
     for (let item of scanList.values())
         item.ipHere = item.btHere = false;
 
-    Promise.all([ doBtv ?
+    return Promise.all([ doBtv ?
         pExec(`${btbindir}bluetoothview /scomma ${btbindir}btf.txt`)
         .then(stdout => wait(300,stdout))
         .then(stdout => c2pP(fs.readFile)(`${btbindir}btf.txt`, 'utf8'))
@@ -461,22 +463,24 @@ function scanAll() {
                     .then(res => makeState('whoHere',whoHere))
                     .then(res => _I(`ScanAll: ${countHere} devices here: ${whoHere}`));
             });
-        }, err => adapter.log.warn(`Scan devices returned error: ${_o(err)}`));
+        }, err => _W(`Scan devices returned error: ${_o(err)}`));
 }
 
+var ain = '';
 function main() {
     host = adapter.host;
 
     try{
         noble = require('noble');
     } catch(e) {
-        adapter.log.warn(`Noble not available, Error: ${_o(e)}`);
+        _W(`Noble not available, Error: ${_o(e)}`);
         noble = null;
     }
 
+    ain = adapter.name + '.' + adapter.instance + '.';
 
     if (!adapter.config.devices.length) {
-        adapter.log.warn(`No to be scanned devices are configured for host ${host}! Will stop Adapter`);
+        _W(`No to be scanned devices are configured for host ${host}! Will stop Adapter`);
         return stop(true);
     }
 
@@ -512,19 +516,19 @@ function main() {
                 if (item.name)
                     item.name = item.name.trim();
                 if (!item.name || item.name.length<2)
-                    return adapter.log.warn(`Invalid item name '${_o(item.name)}', must be at least 2 letters long`);
+                    return _W(`Invalid item name '${_o(item.name)}', must be at least 2 letters long`);
                 if (scanList.has(item.name))
-                    return adapter.log.warn(`Double item name '${item.name}', names cannot be used more than once!`);
+                    return _W(`Double item name '${item.name}', names cannot be used more than once!`);
                 item.id = item.name.endsWith('-') ? item.name.slice(0,-1) : item.name ;
                 item.ip = item.ip ? item.ip.trim() : '';
                 item.bluetooth = item.bluetooth ? item.bluetooth.trim().toUpperCase() : '';
                 item.hasBT = /^([0-9A-F]{2}\:){5}[0-9A-F]{2}$/.test(item.bluetooth); 
                 if (item.bluetooth!== '' && !item.hasBT)
-                    adapter.log.warn(`Invalid bluetooth address '${item.bluetooth}', 6 hex numbers separated by ':'`);                
+                    _W(`Invalid bluetooth address '${item.bluetooth}', 6 hex numbers separated by ':'`);                
                 item.printer =  item.ip && item.name.startsWith('HP-');
                 item.hasIP = item.ip && item.ip.length>2;
                 if (!(item.hasIP || item.hasBT))
-                    return adapter.log.warn(`Invalid Device should have IP or BT set ${_o(item)}`);                
+                    return _W(`Invalid Device should have IP or BT set ${_o(item)}`);                
                 scanList.set(item.name,item);
                 _I(`Init item ${item.name} with ${_o(item)}`);
                 return item.id;
@@ -533,9 +537,19 @@ function main() {
             _I(`radar adapter initialized ${scanList.size} devices.`);
             _I(`radar set use of fping(${doFping}), doHci(${doHci}) and doBtv(${doBtv}).`);
             scanTimer = setInterval(scanAll,scanDelay);
-            scanAll(); // scan first time
-        }).catch(err => {
-            adapter.log.warn(`radar initialization finished with error ${_o(err)}, will stop adapter!`);
+            return scanAll(); // scan first time and generate states if they do not exist yet
+        }).then(res => c2pP(adapter.objects.getObjectList)({startkey: ain, endkey: ain + '\u9999'})
+        ).then(res => pSeriesP(res.rows, item => {  // clean all states which are not part of the list
+            if (objects.has(item.id.slice(ain.length))) 
+                return Promise.resolve();
+            return c2pP(adapter.deleteState)(item.id)
+                .then(x => _D(`Del State: ${item.id}`), err => _D(`Del State err: ${_o(err)}`)) ///TC
+                .then(y => c2pP(adapter.delObject)(item.id))
+                .then(x => _D(`Del Object: ${item.id}`), err => _D(`Del Object err: ${_o(err)}`)) ///TC
+            })
+        ).catch(err => {
+            _W(`radar initialization finished with error ${_o(err)}, will stop adapter!`);
             stop(true);
-        });
+            throw err;
+        }).then(x => _I('Adapter initialization finished!'));
 }

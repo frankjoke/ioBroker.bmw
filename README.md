@@ -6,15 +6,18 @@ ioBroker radar für IP und Bluetooth Adapter
 Mit diesem Adapter kann man testen ob Geräte via Netzwerk oder Bluetooth verfügbar sind.
 Er benutzt Ping (und wenn installiert auch fping).
 Für Bluetooth verwendet es neben Noble [http://www.nirsoft.net/utils/bluetooth_viewer.html] unter Windows und hcitool auf Linux.
-
-Will try to use on Windows [http://www.nirsoft.net/utils/bluetooth_viewer.html], let's see
+Noble ist nun optional und wenn es nicht installiert werden kann wird der Adapter trotzdem laufen.
 
 Wenn ein Name mit '-' endet wird er nicht zu whoHere dazugerechnet, erscheint aber unter allHere.
 Wenn ein Gerät eine IP-Adresse hat und der Name mit 'HP-' beginnt wird versucht alle 500 scans (einstellbar) den Tiuntenfüllstand vom HP-Drucker auszulesen. 
 
+## Important
+* Adapter requires node >= v4.5.*
+
 ## Changelog
-### 0-4-2
-*   Bug fixes to 0.4.1
+### 0.4.3
+* Bug fixes to 0.4.1
+* Der Adapter löscht auch nicht verwendete States/Objekte die der Adapter (mit dieser Instanz) erzeugt hat und die aber nicht mehr gescannt werden.
 
 ### 0.4.1 
 * Habe für Windows 'Bluetoothview' integriert. Damit ist es auch ohne Noble möglich BT-Devices zu scannen.
