@@ -546,7 +546,7 @@ function main() {
                 .then(x => _D(`Del State: ${item.id}`), err => _D(`Del State err: ${_o(err)}`)) ///TC
                 .then(y => c2pP(adapter.delObject)(item.id))
                 .then(x => _D(`Del Object: ${item.id}`), err => _D(`Del Object err: ${_o(err)}`)) ///TC
-            })
+            },10)
         ).catch(err => {
             _W(`radar initialization finished with error ${_o(err)}, will stop adapter!`);
             stop(true);
