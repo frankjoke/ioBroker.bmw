@@ -35,51 +35,36 @@ function _W(l,v) { adapter.log.warn(l); return v === undefined ? l : v; }
 
 function wait(time,arg) { return new Promise((res,rej) => setTimeout(res,time,arg))}
 
-function pSeries(obj,fun,delay) { // fun gets(item,resolve,reject) and behaves like a promise
-    delay = delay || 0;
-    var p = Promise.resolve();
-    const   nv = [],
-            f = (k) => p = p.then(() => (new Promise((resolve,reject) => fun(k, resolve, reject)))
-                    .then(res => wait(delay,res,nv.push(res))));
-    for(var item of obj) 
-        f(item);
-    
-    return p.then(() => nv);
-}
-
-/*
-function pSeries(obj,fun,delay) { // fun gets(item,resolve,reject) and behaves like a promise
-    delay = delay || 0;
-    var p = Promise.resolve();
-    const   nv = [],
-            f = (k) => p = p.then(() => (new Promise((resolve,reject) => fun(k, resolve, reject)))
-                    .then(res => wait(delay,nv.push(res))));
-    for(var item of obj) 
-        f(item);
-    
-    return p.then(() => nv);
-}
-*/
 function pSeriesP(obj,promfn,delay) { // fun gets(item) and returns a promise
     delay = delay || 0;
-    var p = Promise.resolve();
+    let p = Promise.resolve();
     const   nv = [],
             f = (k) => p = p.then(() => promfn(k).then(res => wait(delay,nv.push(res))));
-    for(var item of obj) 
+    for(let item of obj) 
+        f(item);
+    return p.then(() => nv);
+}
+/*
+function pSeriesInP(obj,promfn,delay) { // fun gets(key,obj) and returns a promise
+    delay = delay || 0;
+    let p = Promise.resolve();
+    const   nv = [],
+            f = (k) => p = p.then(() => promfn(k,obj).then(res => wait(delay,nv.push(res))));
+    for(let item in obj) 
         f(item);
     return p.then(() => nv);
 }
 
 function pSeriesF(obj,fun,delay) { // fun gets(item) and returns a value
     delay = delay || 0;
-    var p = Promise.resolve();
+    let p = Promise.resolve();
     const   nv = [],
             f = (k) => p = p.then(() => Promise.resolve(fun(k)).then(res => wait(delay,nv.push(res))));
-    for(var item of obj) 
+    for(let item of obj) 
         f(item);
     return p.then(() => nv);
 }
-
+*/
 function c2pP(f) {
 //    _D(`c2pP: ${_o(f)}`);
     return function () {
@@ -293,6 +278,7 @@ function pGet(url,retry) {
 var doFping = true;
 var doHci = true;
 var doBtv = true;
+var doMac = true;
 
 function scanHP(item) {
     function parseString(body) {
@@ -380,12 +366,11 @@ function scanAll() {
                 _D(`Noble found ${found} from returned ${Object.keys(data).length}:${_o(data)}`);
                 return found;
             }, err => false),
-        pSeries(scanList.values(), (item,res,rej) => {
+        pSeriesP(scanList.values(), item => {
 //            _D(`key ${key} obj ${_o(key)} = ${_o(obj[key])}`);
             let all = [];
             if (item.hasIP) 
-                all.push((new Promise((res,rej) => 
-                        ping.sys.probe(item.ip,alive => res(alive))))
+                all.push(c1pP(ping.sys.probe)(item.ip)
                     .then(res => {
 //                        _I(`${item.name}:${item.ip} = ${res}`);
                         if (!res && doFping)
@@ -404,6 +389,15 @@ function scanAll() {
                     })
                 );
             
+            if (doMac && item.hasMAC)
+                all.push(pSeriesP(item.hasMAC, mac => pExec('arp-scan -lgq  --retry=5 --destaddr='+ mac)
+                    .then(ret => {
+                        item.ipHere = item.ipHere || ret.toUpperCase().indexOf(mac)>0; 
+                        _I(`arp-scan for ${item.id}  ${item.ipHere} returned ${ret}`);
+                        return Promise.resolve();                        
+                    })
+                ));
+
             if (doHci && item.hasBT && !item.bluetooth.startsWith('7C:2F:80')) 
                 all.push(pExec('hcitool name ' + item.bluetooth)
                     .then(stdout => {
@@ -417,9 +411,8 @@ function scanAll() {
                     .then(bt => item.btHere = bt));               
             
             all.push(wait(100));
-            Promise.all(all)
-                .then(obj => res(item.name), 
-                    err => res(`err in ${item.name}: ${_o(err)}`));
+            return Promise.all(all)
+                .then(obj => item.name, err => _D(`err in ${item.name}: ${_o(err)}`));
         },50).then(res => res, err => _D(`err ${_o(err)}`,err))
     ]).then(res => {
 //            _D(`Promise all  returned ${res}  ${res}:${_o(res)}`);
@@ -466,7 +459,12 @@ function scanAll() {
         }, err => _W(`Scan devices returned error: ${_o(err)}`));
 }
 
+function isMacBt(str) {
+    return /^([0-9A-F]{2}\:){5}[0-9A-F]{2}$/.test(str.trim().toUpperCase());
+}
+
 var ain = '';
+
 function main() {
     host = adapter.host;
 
@@ -507,35 +505,52 @@ function main() {
             return pExec('!fping 127.0.0.1').then(r => r,r => r)
         }).then(stdout => / is alive/.test(stdout),false)
         .then(result => {
-            doFping = result;
+            doFping = result; 
+            return pExec('!arp-scan -lgq').then(r => r,r => r)
+        }).then(stdout => /[0-9] packets received/.test(stdout),false)
+        .then(result => {
+            doMac = result;
             return pExec('!hcitool name 12:34:56:78:90:ab');
         }).then(res => true, err =>  false)
         .then(res => {
             doHci = res;
-            return pSeriesF(adapter.config.devices, item => {
+            return pSeriesP(adapter.config.devices, item => {
+//                _I(`checking item ${_o(item)}`);
                 if (item.name)
                     item.name = item.name.trim();
                 if (!item.name || item.name.length<2)
-                    return _W(`Invalid item name '${_o(item.name)}', must be at least 2 letters long`);
+                    return Promise.resolve(_W(`Invalid item name '${_o(item.name)}', must be at least 2 letters long`));
                 if (scanList.has(item.name))
-                    return _W(`Double item name '${item.name}', names cannot be used more than once!`);
+                    return Promise.resolve(_W(`Double item name '${item.name}', names cannot be used more than once!`));
                 item.id = item.name.endsWith('-') ? item.name.slice(0,-1) : item.name ;
                 item.ip = item.ip ? item.ip.trim() : '';
+                item.macs = item.macs ? item.macs.trim().toUpperCase() : '';
+                item.macs.split(',').forEach(val  => {
+                    const mac = val && (typeof val === 'string') ? val.trim() : null;
+                    if (mac) {
+                        if (isMacBt(mac))
+                            item.hasMAC = item.hasMAC ? item.hasMAC.push(mac) : [mac];
+                        else 
+                            _W(`invalid MAC address in ${item.name}: '${val}'`);
+                    }
+                });
+                if (item.hasMAC && !doMac)
+                    _W(`MAC addresses '${item.macs}' will not be scanned b ecause no arp-scan is available!`)
                 item.bluetooth = item.bluetooth ? item.bluetooth.trim().toUpperCase() : '';
-                item.hasBT = /^([0-9A-F]{2}\:){5}[0-9A-F]{2}$/.test(item.bluetooth); 
+                item.hasBT = isMacBt(item.bluetooth); 
                 if (item.bluetooth!== '' && !item.hasBT)
                     _W(`Invalid bluetooth address '${item.bluetooth}', 6 hex numbers separated by ':'`);                
                 item.printer =  item.ip && item.name.startsWith('HP-');
                 item.hasIP = item.ip && item.ip.length>2;
                 if (!(item.hasIP || item.hasBT))
-                    return _W(`Invalid Device should have IP or BT set ${_o(item)}`);                
+                    return Promise.resolve(_W(`Invalid Device should have IP or BT set ${_o(item)}`));                
                 scanList.set(item.name,item);
                 _I(`Init item ${item.name} with ${_o(item)}`);
-                return item.id;
+                return Promise.resolve(item.id);
             },50);
         }).then(res => {
             _I(`radar adapter initialized ${scanList.size} devices.`);
-            _I(`radar set use of noble(${!!noble}), fping(${doFping}), doHci(${doHci}) and doBtv(${doBtv}).`);
+            _I(`radar set use of noble(${!!noble}), fping(${doFping}), doMac(${doMac}), doHci(${doHci}) and doBtv(${doBtv}).`);
             scanTimer = setInterval(scanAll,scanDelay);
             return scanAll(); // scan first time and generate states if they do not exist yet
         }).then(res => c2pP(adapter.objects.getObjectList)({startkey: ain, endkey: ain + '\u9999'})

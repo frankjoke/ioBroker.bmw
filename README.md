@@ -4,17 +4,23 @@ ioBroker radar für IP und Bluetooth Adapter
 
 # ioBroker radar Adapter für IP und Bluetooth
 Mit diesem Adapter kann man testen ob Geräte via Netzwerk oder Bluetooth verfügbar sind.
-Er benutzt Ping (und wenn installiert auch fping).
+Er benutzt Ping (und wenn installiert auch fping, 'sudo apt-get fpring' erledigt die Installation am Raspi).
 Für Bluetooth verwendet es neben Noble [http://www.nirsoft.net/utils/bluetooth_viewer.html] unter Windows und hcitool auf Linux.
 Noble ist nun optional und wenn es nicht installiert werden kann wird der Adapter trotzdem laufen.
+
+MAC-Adressen können auch angegeben werden, diese werden aber nur verwendet wenn das Programm 'arp-scan' installiert ist. Am Raspi kann das mit 'sudo apt-get install arp-scan' installiert werden.
+Es können mehrere MAC-Adressen durch ',' getrennt angegeben werden.
 
 Wenn ein Name mit '-' endet wird er nicht zu whoHere dazugerechnet, erscheint aber unter allHere.
 Wenn ein Gerät eine IP-Adresse hat und der Name mit 'HP-' beginnt wird versucht alle 500 scans (einstellbar) den Tiuntenfüllstand vom HP-Drucker auszulesen. 
 
 ## Important
-* Adapter requires node >= v4.5.*
+* Adapter requires node >= v4.3.*
 
 ## Changelog
+### 0.5.0
+* Der Adapter nimmt jetzt auch Netzwerk-MAC-Adressen (auch mehrere pro Gerät) 
+
 ### 0.4.3
 * Bug fixes to 0.4.1
 * Der Adapter löscht auch nicht verwendete States/Objekte die der Adapter (mit dieser Instanz) erzeugt hat und die aber nicht mehr gescannt werden.
