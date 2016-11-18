@@ -535,7 +535,7 @@ function main() {
                     }
                 });
                 if (item.hasMAC && !doMac)
-                    _W(`MAC addresses '${item.macs}' will not be scanned b ecause no arp-scan is available!`)
+                    _W(`MAC addresses '${item.macs}' will not be scanned because no arp-scan is available!`)
                 item.bluetooth = item.bluetooth ? item.bluetooth.trim().toUpperCase() : '';
                 item.hasBT = isMacBt(item.bluetooth); 
                 if (item.bluetooth!== '' && !item.hasBT)
