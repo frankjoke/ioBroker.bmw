@@ -393,7 +393,7 @@ function scanAll() {
                 all.push(pSeriesP(item.hasMAC, mac => pExec('arp-scan -lgq  --retry=5 --destaddr='+ mac)
                     .then(ret => {
                         item.ipHere = item.ipHere || ret.toUpperCase().indexOf(mac)>0; 
-                        _I(`arp-scan for ${item.id}  ${item.ipHere} returned ${ret}`);
+//                        _I(`arp-scan for ${item.id}  ${item.ipHere} returned ${ret}`);
                         return Promise.resolve();                        
                     })
                 ));
