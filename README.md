@@ -65,6 +65,7 @@ Wenn ein Gerätename mit `-` endet (z.B. `Internet-`) dann wird er nicht in whoH
 
 ## Installation
 Auf Linux sollte das tool 'fping' und arp-scan (z.B. mit `sudo apt-get install fping arp-scan`) installiert werden welches zusätzlich zum normalen ping verwendet wird.
+Auf Windows sollte das bin.zip nach node_modules\iobroker.radar extrahiert werden da eventuell node_modules\iobroker.radar\bin\bluetoothview\BluetoothView.exe von npm nicht installiert wird.
 
 ## License
 
