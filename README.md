@@ -62,11 +62,9 @@ Beginnt der Name des Geätes mit `HP-` dann nimmt radar an es handelt sich um ei
 Wenn ein Gerätename mit `-` endet (z.B. `Internet-`) dann wird er nicht in whoHere/countHere gelistet. Damit können Geräte oder andere Devices vom Anwesenheitscheck ausgeklammert werden.
 
 ### Todo
-Nicht gebrauchte states löschen. 
-Auf Windows mit Bluetooth eine 2. Alternative zu Noble (Benutzt nur BT-LE) suchen.
 
 ## Installation
-Auf Linux sollte das tool 'fping' (z.B. mit `sudo apt-get install fping`) installiert werden welches zusätzlich zum normalen ping verwendet wird.
+Auf Linux sollte das tool 'fping' und arp-scan (z.B. mit `sudo apt-get install fping arp-scan`) installiert werden welches zusätzlich zum normalen ping verwendet wird.
 
 ## License
 
