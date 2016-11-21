@@ -4,7 +4,7 @@ ioBroker radar für IP und Bluetooth Adapter
 
 # ioBroker radar Adapter für IP und Bluetooth
 Mit diesem Adapter kann man testen ob Geräte via Netzwerk oder Bluetooth verfügbar sind.
-Er benutzt Ping (und wenn installiert auch fping, 'sudo apt-get fpring' erledigt die Installation am Raspi).
+Er benutzt Ping (und wenn installiert auf Linux auch fping und arp-scan, 'sudo apt-get fping arp-scan' erledigt die Installation am Raspi).
 Für Bluetooth verwendet es neben Noble [http://www.nirsoft.net/utils/bluetooth_viewer.html] unter Windows und hcitool auf Linux.
 Noble ist nun optional und wenn es nicht installiert werden kann wird der Adapter trotzdem laufen.
 
@@ -12,12 +12,18 @@ MAC-Adressen können auch angegeben werden, diese werden aber nur verwendet wenn
 Es können mehrere MAC-Adressen durch ',' getrennt angegeben werden.
 
 Wenn ein Name mit '-' endet wird er nicht zu whoHere dazugerechnet, erscheint aber unter allHere.
-Wenn ein Gerät eine IP-Adresse hat und der Name mit 'HP-' beginnt wird versucht alle 500 scans (einstellbar) den Tiuntenfüllstand vom HP-Drucker auszulesen. 
+Wenn ein Gerät eine IP-Adresse hat und der Name mit `HP-` beginnt wird versucht alle 500 scans (einstellbar) den Tiuntenfüllstand vom HP-Drucker auszulesen. 
+Wenn ein Gerät mit `ECB-` beginnt werden die Wechselkurse der Eurpopäischen Zentralbank von der Seite [http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml] abgefragt. In diesem Fall wird das Feld der IP-Adresse dazu verwendet um die Kurse auszuwählen die abgefragt werden sollen, getrennt durch Beistriche oder Leerzeichen wie z.B zur Anzeige von US$ und Rubel: `USD,RUB`.
 
-## Important
+## Important/Wichtig
 * Adapter requires node >= v4.3.*
 
 ## Changelog
+### 0.6.0
+* Loglevel info loggt nur wenn sich whoHere ändert
+* HP-Printer Tintenfüllstand sollte nun auch bei OfficeJet funktionieren  
+* ECB (European Central Bank) Wechselkurse können abgefragt werden
+
 ### 0.5.0
 * Der Adapter nimmt jetzt auch Netzwerk-MAC-Adressen (auch mehrere pro Gerät) 
 
@@ -46,11 +52,12 @@ Wenn ein Gerät eine IP-Adresse hat und der Name mit 'HP-' beginnt wird versucht
 
 ## Install
 
-```add with iobroker Admin  Adapter the git repo```
+Installieren über ioBroker.admin
 
-On Linux install `fping` (with me it worked like `sudo apt-get install fping`)
+On Linux install `fping` and `arp-scan` (with me it worked like `sudo apt-get install fping arp-scan`)
 
 if `fping` is available the tool will use ping and fping to check on IP availabilit. 
+if `arp-scan` is available it will use it to scan mac addresses.
 
 Also make sure that `hcitool` is installed, normally part of `bluez`.
 

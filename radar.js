@@ -280,39 +280,64 @@ var doHci = true;
 var doBtv = true;
 var doMac = true;
 
-function scanHP(item) {
-    function parseString(body) {
-        function parseNumbers(str) {
-            if (!isNaN(str)) 
-                str = str % 1 === 0 ? parseInt(str) : parseFloat(str);
-            return str;
-        }
-
-        return (c2pP(new xml2js.Parser({explicitArray:false,valueProcessors:[parseNumbers]})
-            .parseString))(body);
+function xmlParseString(body) {
+    function parseNumbers(str) {
+        if (!isNaN(str)) 
+            str = str % 1 === 0 ? parseInt(str) : parseFloat(str);
+        return str;
     }
 
+    function tagnames(item) {
+        let all = item.split(':');
+        item =  (all.length===2) ? all[1] : all[0];
+//            _I(`Tag: all: ${_o(all)} became ${item}`);                
+        return item;
+    }
+    return (c2pP(new xml2js.Parser({explicitArray:false,
+            trim:true, 
+            tagNameProcessors: [tagnames],
+//                attrNameProcessors: [tagnames],
+            valueProcessors:[parseNumbers]})
+        .parseString))(body);
+}
+
+function scanECB(item) {
+    let idn = item.id+'.';    
+    return pGet('http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml',2)
+        .then(body => xmlParseString(body))
+        .then(ecb => makeState(idn+'fromDate', ecb.Envelope.Cube.Cube['$'].time).then(() => ecb))
+        .then(ecb => pSeriesP(ecb.Envelope.Cube.Cube.Cube, cur =>{
+                let ccur = cur['$'].currency;
+                let rate = parseFloat(cur['$'].rate);
+                if (item.ip.indexOf(ccur)<0)
+                    return Promise.resolve();
+                return makeState(idn+ccur,rate);
+            }, 5))
+        .catch(err => _I(`ECB error: ${_o(err)}`));
+}
+
+function scanHP(item) {
 
     let idn = item.id+'.';
     let colors = [];
     let below10 = [];
 //    _I(`should call ${item.ip} for printer data`);
     return pGet('http://'+item.ip+'/DevMgmt/ConsumableConfigDyn.xml',2)
-        .then(body => parseString(body.trim()))
-        .then(result => pSeriesP(result["ccdyn:ConsumableConfigDyn"]["ccdyn:ConsumableInfo"], item => {
+        .then(body => xmlParseString(body.trim()))
+        .then(result => pSeriesP(result["ConsumableConfigDyn"]["ConsumableInfo"], item => {
 //                    _D(`parser ${item["dd:ConsumableTypeEnum"]}`);
-            if (item["dd:ConsumableTypeEnum"]!="ink")
+            if (item["ConsumableTypeEnum"]!="ink")
                 return Promise.resolve('No Ink'); 
-            let p = "P" + item["dd:ConsumableStation"],
-                lc = item["dd:ConsumableLabelCode"],
+            let p = "P" + item["ConsumableStation"],
+                lc = item["ConsumableLabelCode"],
                 idnc = idn + lc + '.',
-                d = item["dd:Installation"]["dd:Date"],
-                l = parseInt(item["dd:ConsumablePercentageLevelRemaining"]),
-                ci = item["dd:ConsumableIcon"],
-                s = ci["dd:Shape"],
-                fc = ci["dd:FillColor"],
-                rgb = fc["dd:Blue"] | (fc["dd:Green"] << 8) | (fc["dd:Red"] << 16),
-                n = item["dd:ConsumableSelectibilityNumber"];
+                d = item["Installation"]["Date"],
+                l = parseInt(item["ConsumablePercentageLevelRemaining"]),
+                ci = item["ConsumableIcon"],
+                s = ci["Shape"],
+                fc = ci["FillColor"],
+                rgb = fc["Blue"] | (fc["Green"] << 8) | (fc["Red"] << 16),
+                n = item["ConsumableSelectibilityNumber"];
             rgb = '#' + (0x1000000 + rgb).toString(16).slice(1);
             let ss = `${p} = ${lc}, ${d}, ${l}%, ${n}, ${rgb}, ${s}`;
             colors.push(ss);
@@ -328,7 +353,7 @@ function scanHP(item) {
         .catch(err => _D(`HP Printer could not find info! Err: ${_o(err)}`)));
 }
 
-
+var oldWhoHere = null;
 function scanAll() {
     if (isStopping) // do not start scan if stopping...
         return;
@@ -369,7 +394,10 @@ function scanAll() {
         pSeriesP(scanList.values(), item => {
 //            _D(`key ${key} obj ${_o(key)} = ${_o(obj[key])}`);
             let all = [];
-            if (item.hasIP) 
+            if (item.hasECB) {
+                if (printerCount===0)
+                    all.push(scanECB(item));
+            } else if (item.hasIP) 
                 all.push(c1pP(ping.sys.probe)(item.ip)
                     .then(res => {
 //                        _I(`${item.name}:${item.ip} = ${res}`);
@@ -389,6 +417,7 @@ function scanAll() {
                     })
                 );
             
+
             if (doMac && item.hasMAC)
                 all.push(pSeriesP(item.hasMAC, mac => pExec('arp-scan -lgq  --retry=5 --destaddr='+ mac)
                     .then(ret => {
@@ -416,7 +445,7 @@ function scanAll() {
         },50).then(res => res, err => _D(`err ${_o(err)}`,err))
     ]).then(res => {
 //            _D(`Promise all  returned ${res}  ${res}:${_o(res)}`);
-            if (++printerCount >=printerDelay)
+            if (++printerCount >=printerDelay) ///TBC
                 printerCount = 0;
             whoHere = [];
             let allhere = [];
@@ -427,6 +456,8 @@ function scanAll() {
                 let cnt = item.cnt===undefined ? -delayAway : parseInt(item.cnt);
                 let anw = false;
 //                _I(`${item.name}:cnt=${cnt}, here=${here}`);
+                if (item.hasECB)
+                    return Promise.resolve();
                 if (here) {
                     cnt = cnt<0 ? 0 : cnt+1;
                     anw = true;
@@ -450,11 +481,14 @@ function scanAll() {
             }).then(() => {
                 countHere = whoHere.length;
                 whoHere = whoHere.join(', ');
+                if (oldWhoHere != whoHere) {
+                    oldWhoHere = whoHere;
+                    _I(`ScanAll: From all ${allhere.length} devices dedected ${countHere} are whoHere: ${whoHere}`);
+                }
                 allhere = allhere.join(', ');
                 return makeState('countHere',countHere)
                     .then(res => makeState('allHere',allhere))
-                    .then(res => makeState('whoHere',whoHere))
-                    .then(res => _I(`ScanAll: ${countHere} devices here: ${whoHere}`));
+                    .then(res => makeState('whoHere',whoHere));
             });
         }, err => _W(`Scan devices returned error: ${_o(err)}`));
 }
@@ -541,6 +575,7 @@ function main() {
                 if (item.bluetooth!== '' && !item.hasBT)
                     _W(`Invalid bluetooth address '${item.bluetooth}', 6 hex numbers separated by ':'`);                
                 item.printer =  item.ip && item.name.startsWith('HP-');
+                item.hasECB = item.ip && item.name.startsWith('ECB-');
                 item.hasIP = item.ip && item.ip.length>2;
                 if (!(item.hasIP || item.hasBT))
                     return Promise.resolve(_W(`Invalid Device should have IP or BT set ${_o(item)}`));                
