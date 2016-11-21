@@ -17,7 +17,7 @@
         "readme":                   "https://github.com/frankjoke/iobroker.radar/blob/master/README.md",
         "loglevel":                 "info",
         "icon":                     "radar.png",
-        "keywords":                 ["ping", "bluetooth", "radar"],
+        "keywords":                 ["ping", "ip", "mac", "bluetooth", "radar"],
         "extIcon":                  "https://raw.githubusercontent.com/frankjoke/iobroker.radar/master/admin/radar.png",
 		"type":                     "hardware"
     },
