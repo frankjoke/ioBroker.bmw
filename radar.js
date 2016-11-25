@@ -551,7 +551,7 @@ function main() {
             return pSeriesP(adapter.config.devices, item => {
 //                _I(`checking item ${_o(item)}`);
                 if (item.name)
-                    item.name = item.name.trim();
+                    item.name = item.name.trim().replace(/[\s\.]/g, '_');
                 if (!item.name || item.name.length<2)
                     return Promise.resolve(_W(`Invalid item name '${_o(item.name)}', must be at least 2 letters long`));
                 if (scanList.has(item.name))

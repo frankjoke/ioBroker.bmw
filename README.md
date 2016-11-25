@@ -1,4 +1,5 @@
 ![Logo](admin/radar.png)
+
 ioBroker radar für IP und Bluetooth Adapter
 ==============
 
@@ -19,6 +20,9 @@ Wenn ein Gerät mit `ECB-` beginnt werden die Wechselkurse der Eurpopäischen Ze
 * Adapter requires node >= v4.3.*
 
 ## Changelog
+### 0.6.1
+* Der Gerätename wird überprüft und ' ' oder '.' werden durch '_' ersetzt. Damit werden keine ungültigen Datenpunkte erzeugt.
+
 ### 0.6.0
 * Loglevel info loggt nur wenn sich whoHere ändert
 * HP-Printer Tintenfüllstand sollte nun auch bei OfficeJet funktionieren  
