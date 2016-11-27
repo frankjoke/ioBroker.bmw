@@ -16,10 +16,16 @@ Wenn ein Name mit '-' endet wird er nicht zu whoHere dazugerechnet, erscheint ab
 Wenn ein Gerät eine IP-Adresse hat und der Name mit `HP-` beginnt wird versucht alle 500 scans (einstellbar) den Tiuntenfüllstand vom HP-Drucker auszulesen. 
 Wenn ein Gerät mit `ECB-` beginnt werden die Wechselkurse der Eurpopäischen Zentralbank von der Seite [http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml] abgefragt. In diesem Fall wird das Feld der IP-Adresse dazu verwendet um die Kurse auszuwählen die abgefragt werden sollen, getrennt durch Beistriche oder Leerzeichen wie z.B zur Anzeige von US$ und Rubel: `USD,RUB`.
 
+Je nach settings für External Network in Sekunden (wenn 0 dann ausgeschaltet) wird die externe IP-Adresse abgefragt und als IPV4 abgelegt. Wenn die Abfrage nicht gelingt (von 3 verschiedenen Servern) wird ein Status-Flag auf 0 gesetzt. Der Status kann auch 1 oder 2 sein je nachdem ob die IPÜ von einem oder mehreren Servern zurückgegeben worden ist. Damit kann erkannt werden wenn keine Verbindung zum externen Netzwerk besteht (Status=0) und falls eine besteht die externe IPV4-Adresse ausgelesen werden was ermöglicht dass dynamisch DNS upgedated werden können.
+Default Delay ist 300 Sekunden (=5 Minuten), ich würde nicht unter 60 (1 Minute) gehen da bei jeder Abfrage 2-3 Webseiten abgefragt werden.
+
 ## Important/Wichtig
 * Adapter requires node >= v4.3.*
 
 ## Changelog
+### 0.6.3
+* Scan External IP und External Network Status eingeführt. 
+
 ### 0.6.1
 * Der Gerätename wird überprüft und ' ' oder '.' werden durch '_' ersetzt. Damit werden keine ungültigen Datenpunkte erzeugt.
 

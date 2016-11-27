@@ -24,16 +24,16 @@ const fs =        require('fs');
 var noble =        null;
 const exec =      require('child_process').exec;
 
-function _o(obj,level) {    return  util.inspect(obj, false, level || 2, false).replace(/\n/g,' ');}
+function _O(obj,level) {    return  util.inspect(obj, false, level || 2, false).replace(/\n/g,' ');}
 
 // function _J(str) { try { return JSON.parse(str); } catch (e) { return {'error':'JSON Parse Error of:'+str}}} 
-const _N = (a,b,c,d,e) => setTimeout(a,0,b,c,d,e);
+function _N(fun) { return setTimeout.apply(null,[fun,0].concat(Array.prototype.slice.call(arguments, 1))); } // move fun to next schedule keeping arguments
 function _D(l,v) { adapter.log.debug(l); return v === undefined ? l : v; }
 function _I(l,v) { adapter.log.info(l); return v === undefined ? l : v; }
 function _W(l,v) { adapter.log.warn(l); return v === undefined ? l : v; }
 
 
-function wait(time,arg) { return new Promise((res,rej) => setTimeout(res,time,arg))}
+function wait(time,arg) { return new Promise(res => setTimeout(res,time,arg))}
 
 function pSeriesP(obj,promfn,delay) { // fun gets(item) and returns a promise
     delay = delay || 0;
@@ -66,7 +66,7 @@ function pSeriesF(obj,fun,delay) { // fun gets(item) and returns a value
 }
 */
 function c2pP(f) {
-//    _D(`c2pP: ${_o(f)}`);
+//    _D(`c2pP: ${_O(f)}`);
     return function () {
         const args = Array.prototype.slice.call(arguments);
         return new Promise((res, rej) => {
@@ -133,7 +133,7 @@ adapter.on('unload', () => stop(false));
 
 function processMessage(obj) {
     if (obj && obj.command) {
-        _D(`process Message ${_o(obj)}`);
+        _D(`process Message ${_O(obj)}`);
         switch (obj.command) {
             case 'ping': {
                 // Try to connect to mqtt broker
@@ -164,7 +164,7 @@ function pSetState(id,val,ack) {
 function makeState(id,value) {
     if (objects.has(id))
         return pSetState(id,value,true);
-    _D(`Make State ${id} and set value to '${_o(value)}'`) ///TC
+    _D(`Make State ${id} and set value to '${_O(value)}'`) ///TC
     var st = {
         common: {
             name:  id, // You can add here some description
@@ -184,7 +184,7 @@ function makeState(id,value) {
             objects.set(id,x);
            return pSetState(id,value,false);
         })
-        .catch(err => _D(`MS ${_o(err)}:=extend`,id));
+        .catch(err => _D(`MS ${_O(err)}:=extend`,id));
 
 }
 
@@ -229,7 +229,7 @@ function myNoble(len) {
 
         noble.startScanning([], true);
         nobleRunning = setTimeout(() => res(stopNoble(idf)), len);
-    }).catch(err => _I(`Noble scan Err ${_o(err)}`,err, noble = null));
+    }).catch(err => _I(`Noble scan Err ${_O(err)}`,err, noble = null));
 }
 
 function pExec(command) {
@@ -252,7 +252,7 @@ function pGet(url,retry) {
         http.get(url, (res) => {
             let statusCode = res.statusCode;
             let contentType = res.headers['content-type'];
-            _D(`res: ${statusCode}, ${contentType}`);
+//            _D(`res: ${statusCode}, ${contentType}`);
             let error = null;
             if (statusCode !== 200) {
                 error = new Error(`Request Failed. Status Code: ${statusCode}`);
@@ -290,7 +290,7 @@ function xmlParseString(body) {
     function tagnames(item) {
         let all = item.split(':');
         item =  (all.length===2) ? all[1] : all[0];
-//            _I(`Tag: all: ${_o(all)} became ${item}`);                
+//            _I(`Tag: all: ${_O(all)} became ${item}`);                
         return item;
     }
     return (c2pP(new xml2js.Parser({explicitArray:false,
@@ -299,6 +299,41 @@ function xmlParseString(body) {
 //                attrNameProcessors: [tagnames],
             valueProcessors:[parseNumbers]})
         .parseString))(body);
+}
+
+function scanExtIP() {
+    let oldip = "";
+    let sameip = 0;
+
+    function getIP(site) {
+        return pGet(site,2)
+            .then(chunk => {
+                const ip = chunk.trim();
+                if (ip == oldip) 
+                    ++sameip;
+                else 
+                    oldip = ip;
+                return Promise.resolve(sameip);
+            },err => _I(`MyIP Error ${_O(err)}`,Promise.resolve(sameip)));
+    }
+
+    return getIP('http://icanhazip.com/?x=2')
+        .then(() => getIP('http://wtfismyip.com/text'))
+        .then(() => sameip <1 ? getIP('http://nst.sourceforge.net/nst/tools/ip.php') : Promise.resolve(sameip))
+        .then(() => c2pP(adapter.getState)('ExternalNetwork.IP4'))
+        .then(x => x, err => Promise.resolve())
+        .then(state => {
+            if (state && state.val)
+                state = state.val;
+            if (oldip !== '' && state != oldip) {
+                _I(`New IP address ${oldip}`,oldip);
+            } else if (oldip === '') {
+                    return makeState('ExternalNetwork.status',_W(`Not connected to external network!`,0));
+            } else 
+                _D(`Same IP address ${oldip}`);
+            return makeState('ExternalNetwork.IP4',oldip)
+                .then(() => makeState('ExternalNetwork.status',++sameip));
+        }, err => _I(`scanExtIP error ${_O(err)}`,Promise.resolve()));    
 }
 
 function scanECB(item) {
@@ -313,7 +348,7 @@ function scanECB(item) {
                     return Promise.resolve();
                 return makeState(idn+ccur,rate);
             }, 5))
-        .catch(err => _I(`ECB error: ${_o(err)}`));
+        .catch(err => _I(`ECB error: ${_O(err)}`));
 }
 
 function scanHP(item) {
@@ -350,7 +385,7 @@ function scanHP(item) {
         .then(arg => makeState(idn+'anyBelow10',below10.length>0))
         .then(arg => makeState(_D(idn+'whoBelow10'),below10.join(', ')))
         .then(arg =>  _D(`HP Printer inks found:${colors.length}`))
-        .catch(err => _D(`HP Printer could not find info! Err: ${_o(err)}`)));
+        .catch(err => _D(`HP Printer could not find info! Err: ${_O(err)}`)));
 }
 
 var oldWhoHere = null;
@@ -388,11 +423,11 @@ function scanAll() {
                         ++found;
                     }
                 }
-                _D(`Noble found ${found} from returned ${Object.keys(data).length}:${_o(data)}`);
+                _D(`Noble found ${found} from returned ${Object.keys(data).length}:${_O(data)}`);
                 return found;
             }, err => false),
         pSeriesP(scanList.values(), item => {
-//            _D(`key ${key} obj ${_o(key)} = ${_o(obj[key])}`);
+//            _D(`key ${key} obj ${_O(key)} = ${_O(obj[key])}`);
             let all = [];
             if (item.hasECB) {
                 if (printerCount===0)
@@ -441,17 +476,17 @@ function scanAll() {
             
             all.push(wait(100));
             return Promise.all(all)
-                .then(obj => item.name, err => _D(`err in ${item.name}: ${_o(err)}`));
-        },50).then(res => res, err => _D(`err ${_o(err)}`,err))
+                .then(obj => item.name, err => _D(`err in ${item.name}: ${_O(err)}`));
+        },50).then(res => res, err => _D(`err ${_O(err)}`,err))
     ]).then(res => {
-//            _D(`Promise all  returned ${res}  ${res}:${_o(res)}`);
+//            _D(`Promise all  returned ${res}  ${res}:${_O(res)}`);
             if (++printerCount >=printerDelay) ///TBC
                 printerCount = 0;
             whoHere = [];
             let allhere = [];
             return pSeriesP(scanList.values(),(item) => {
 //            for(let item of scanList.values()) {
-//                _I(`item=${_o(item)}:`);
+//                _I(`item=${_O(item)}:`);
                 const here = item.ipHere || item.btHere;
                 let cnt = item.cnt===undefined ? -delayAway : parseInt(item.cnt);
                 let anw = false;
@@ -472,7 +507,7 @@ function scanAll() {
                     if (item.name==item.id)
                         whoHere.push(item.id);
                 }
-                _D(`${item.id}=${_o(item)}`);
+                _D(`${item.id}=${_O(item)}`);
                 const idn = item.id;
                 return makeState(idn+'.count',cnt)
                     .then(res => makeState(idn+'.here',anw))
@@ -490,7 +525,7 @@ function scanAll() {
                     .then(res => makeState('allHere',allhere))
                     .then(res => makeState('whoHere',whoHere));
             });
-        }, err => _W(`Scan devices returned error: ${_o(err)}`));
+        }, err => _W(`Scan devices returned error: ${_O(err)}`));
 }
 
 function isMacBt(str) {
@@ -505,7 +540,7 @@ function main() {
     try{
         noble = require('noble');
     } catch(e) {
-        _W(`Noble not available, Error: ${_o(e)}`);
+        _W(`Noble not available, Error: ${_O(e)}`);
         noble = null;
     }
 
@@ -528,6 +563,8 @@ function main() {
         adapter.config.printerdelay = 100;
     printerDelay = adapter.config.printerdelay;
 
+    
+
     _I(`radar set to scan every ${adapter.config.scandelay} sec and printers every ${printerDelay} scans.`);
 
     _I(`BT Bin Dir = '${btbindir}'`);
@@ -549,11 +586,11 @@ function main() {
         .then(res => {
             doHci = res;
             return pSeriesP(adapter.config.devices, item => {
-//                _I(`checking item ${_o(item)}`);
+//                _I(`checking item ${_O(item)}`);
                 if (item.name)
                     item.name = item.name.trim().replace(/[\s\.]/g, '_');
                 if (!item.name || item.name.length<2)
-                    return Promise.resolve(_W(`Invalid item name '${_o(item.name)}', must be at least 2 letters long`));
+                    return Promise.resolve(_W(`Invalid item name '${_O(item.name)}', must be at least 2 letters long`));
                 if (scanList.has(item.name))
                     return Promise.resolve(_W(`Double item name '${item.name}', names cannot be used more than once!`));
                 item.id = item.name.endsWith('-') ? item.name.slice(0,-1) : item.name ;
@@ -578,27 +615,36 @@ function main() {
                 item.hasECB = item.ip && item.name.startsWith('ECB-');
                 item.hasIP = item.ip && item.ip.length>2;
                 if (!(item.hasIP || item.hasBT))
-                    return Promise.resolve(_W(`Invalid Device should have IP or BT set ${_o(item)}`));                
+                    return Promise.resolve(_W(`Invalid Device should have IP or BT set ${_O(item)}`));                
                 scanList.set(item.name,item);
-                _I(`Init item ${item.name} with ${_o(item)}`);
+                _I(`Init item ${item.name} with ${_O(item)}`);
                 return Promise.resolve(item.id);
             },50);
+        }).then(()=> {
+            if (parseInt(adapter.config.external)>0)
+                return scanExtIP();
+            return Promise.resolve();
         }).then(res => {
-            _I(`radar adapter initialized ${scanList.size} devices.`);
+            _I(`radar adapter initialized ${scanList.size} devices, ExternalNetwork = ${adapter.config.external}.`);
             _I(`radar set use of noble(${!!noble}), fping(${doFping}), doMac(${doMac}), doHci(${doHci}) and doBtv(${doBtv}).`);
             scanTimer = setInterval(scanAll,scanDelay);
+            if (parseInt(adapter.config.external)>0)
+                setInterval(scanExtIP,parseInt(adapter.config.external)*1000);
             return scanAll(); // scan first time and generate states if they do not exist yet
         }).then(res => c2pP(adapter.objects.getObjectList)({startkey: ain, endkey: ain + '\u9999'})
         ).then(res => pSeriesP(res.rows, item => {  // clean all states which are not part of the list
-            if (objects.has(item.id.slice(ain.length))) 
+//            _I(`Check ${_O(item)}`);
+            let id = item.id.slice(ain.length);
+            if (objects.has(id)) 
                 return Promise.resolve();
-            return c2pP(adapter.deleteState)(item.id)
-                .then(x => _D(`Del State: ${item.id}`), err => _D(`Del State err: ${_o(err)}`)) ///TC
-                .then(y => c2pP(adapter.delObject)(item.id))
-                .then(x => _D(`Del Object: ${item.id}`), err => _D(`Del Object err: ${_o(err)}`)) ///TC
+//            _I(`Delete ${_O(item)}`);
+            return c2pP(adapter.deleteState)(id)
+                .then(x => _D(`Del State: ${id}`), err => _D(`Del State err: ${_O(err)}`)) ///TC
+                .then(y => c2pP(adapter.delObject)(id))
+                .then(x => _D(`Del Object: ${id}`), err => _D(`Del Object err: ${_O(err)}`)) ///TC
             },10)
         ).catch(err => {
-            _W(`radar initialization finished with error ${_o(err)}, will stop adapter!`);
+            _W(`radar initialization finished with error ${_O(err)}, will stop adapter!`);
             stop(true);
             throw err;
         }).then(x => _I('Adapter initialization finished!'));
