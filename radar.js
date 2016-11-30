@@ -20,6 +20,7 @@ const http =      require('http');
 const xml2js =    require('xml2js');
 const ping =      require('ping');
 const fs =        require('fs');
+const dns =       require('dns');
 //const noble =     require('noble'); // will be loaded later because not all machines will have it working
 var noble =        null;
 const exec =      require('child_process').exec;
@@ -204,7 +205,7 @@ function myNoble(len) {
         return idf;
     }
 
-    _D(`Noble= ${noble} start ${len}`);
+    _D(`Noble= ${_O(noble)} start ${len}`);
     
     let idf = {};
     if (nobleRunning) clearTimeout(nobleRunning);
@@ -388,7 +389,19 @@ function scanHP(item) {
         .catch(err => _D(`HP Printer could not find info! Err: ${_O(err)}`)));
 }
 
-var oldWhoHere = null;
+var oldWhoHere = null,
+    ips = new Map(),
+    vendors = new Map();
+
+function checkCache(item,cache,funP) {
+    if (cache.has(item))
+        return Promise.resolve(cache.get(item));
+    return funP(item).then(res => {
+        cache.set(item,res); 
+        return Promise.resolve(res);
+    });
+}
+
 function scanAll() {
     if (isStopping) // do not start scan if stopping...
         return;
@@ -397,6 +410,8 @@ function scanAll() {
 
     for (let item of scanList.values())
         item.ipHere = item.btHere = false;
+    
+    let arps = [];
 
     return Promise.all([ doBtv ?
         pExec(`${btbindir}bluetoothview /scomma ${btbindir}btf.txt`)
@@ -417,22 +432,51 @@ function scanAll() {
         myNoble(scanDelay - 25000)
             .then(data => {
                 let found = 0;
+                let unkn = [];
                 for(let key of scanList.values()) {
                     if (data[key.bluetooth]) {
+                        delete data[key.bluetooth];
                         key.btHere = true;
                         ++found;
                     }
                 }
-                _D(`Noble found ${found} from returned ${Object.keys(data).length}:${_O(data)}`);
-                return found;
+                for(let d in data)
+                    unkn.push(data[d]);
+                _D(`Noble found ${found} from list and returned ${Object.keys(data).length} more not on list: ${_O(unkn)}`);
+                return makeState('AllUnknownBTs',JSON.stringify(unkn));
             }, err => false),
+        doMac ? pExec('sudo arp-scan -lgq --retry=10')
+            .then(res => res && res.match(/(\d*\.){3}\d*\s*([\dA-F]{2}\:){5}[\dA-F]{2}/gi))
+            .then(res => pSeriesP(res, item => {
+                const s = item.split('\t');
+                return checkCache(s[1], vendors, mac => pGet('http://api.macvendors.com/'+mac)
+                        .then(x => x.trim(), err => 'Vendor not found'))
+                    .then(x => s.push(x) && checkCache(s[0],ips, ip => c2pP(dns.reverse)(ip)
+                        .then(nam => s.concat(nam), err => s.concat(['N/A']))))
+                    .then(item => {
+                        for(let sl of scanList.values()) {
+                            let here = false;
+                            if (item[0] == sl.ip)
+                                sl.ipHere = here = true;
+                            if (sl.hasMAC)
+                                for(let m of sl.hasMAC)
+                                    if (item[1].toUpperCase() == m)
+                                        sl.ipHere = here = true;
+                            if (!here)
+                                arps.push(item.join('; '));
+                        }
+                        return item;
+                    })
+                    .catch(err => _D(`${_O(err)}`));
+                },10))
+                .then(res => makeState('AllUnknownIPs',JSON.stringify(arps))) : wait(5),
         pSeriesP(scanList.values(), item => {
 //            _D(`key ${key} obj ${_O(key)} = ${_O(obj[key])}`);
             let all = [];
             if (item.hasECB) {
                 if (printerCount===0)
                     all.push(scanECB(item));
-            } else if (item.hasIP) 
+            } else if (item.hasIP && !item.ipHere) 
                 all.push(c1pP(ping.sys.probe)(item.ip)
                     .then(res => {
 //                        _I(`${item.name}:${item.ip} = ${res}`);
@@ -452,7 +496,7 @@ function scanAll() {
                     })
                 );
             
-
+/*
             if (doMac && item.hasMAC)
                 all.push(pSeriesP(item.hasMAC, mac => pExec('arp-scan -lgq  --retry=5 --destaddr='+ mac)
                     .then(ret => {
@@ -461,8 +505,8 @@ function scanAll() {
                         return Promise.resolve();                        
                     })
                 ));
-
-            if (doHci && item.hasBT && !item.bluetooth.startsWith('7C:2F:80')) 
+*/
+            if (doHci && item.hasBT && !item.bluetooth.startsWith('7C:2F:80') && !item.btHere) 
                 all.push(pExec('hcitool name ' + item.bluetooth)
                     .then(stdout => {
                         let bth = stdout > "";

@@ -19,10 +19,19 @@ Wenn ein Gerät mit `ECB-` beginnt werden die Wechselkurse der Eurpopäischen Ze
 Je nach settings für External Network in Sekunden (wenn 0 dann ausgeschaltet) wird die externe IP-Adresse abgefragt und als IP4 abgelegt. Wenn die Abfrage nicht gelingt (von 3 verschiedenen Servern) wird ein Status-Flag auf 0 gesetzt. Der Status kann auch 1 oder 2 sein je nachdem ob die IP von einem oder mehreren Servern zurückgegeben worden ist. Damit kann erkannt werden wenn keine Verbindung zum externen Netzwerk besteht (Status=0) und falls eine besteht die externe IPV4-Adresse ausgelesen werden was ermöglicht dass dynamisch DNS upgedated werden können.
 Default Delay ist 300 Sekunden (=5 Minuten), ich würde nicht unter 60 (1 Minute) gehen da bei jeder Abfrage 2-3 Webseiten abgefragt werden.
 
+Der Adapter generiert mit arp-scan und Noble (wenn vorhanden) nun auch AllUnknownBTs und AllUnknownIPs JSON-Variablen welche die gefundenen aber nicht im adapter gescannten IP-, MAC- und BT-Adressen listet.
+Damit können neue devices erkannt werden und potentielle scripts können checken ob sich neue Geräte am Wlan angemeldet haben.
+Beide Variablen enthalten arrays mit den unbekannten devices. AllUnknownIPs ist ein Array von Strings die mit '; ' getrennt die gefundene IP-Adresse, die MAC-Adresse, den Hersteller (wenn bekannt) des Lan-Adapters und den Reverse-IP-Namen der IP-Adresse enthält.
+Somit sollten Geräte leicht identifiziert werden können.
+Bei AllUnknownBTs ist es ein Array von Objekten welche die BT-Adresse, den Herstellernamen falls bekannt und die Signalstärke (rssi, je niedriger desto weiter weg is das device) enthält.
+
 ## Important/Wichtig
 * Adapter requires node >= v4.3.*
 
 ## Changelog
+### 0.7.0 
+* Arp-scan und Noble BT scan kreieren 'AllUnknown*' Variablen die die IP/Mac-Adressen und BT-Adressen listen welche gefunden werden aber nicht in der Device-Liste sind!  
+
 ### 0.6.3
 * Scan External IP und External Network Status eingeführt. 
 

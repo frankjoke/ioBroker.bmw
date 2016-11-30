@@ -4,3 +4,4 @@ node_modules
 tmp
 bin/bluetoothview/bt?.txt
 bin/bluetoothview/b*.ini
+*debug.log

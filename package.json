@@ -1,7 +1,7 @@
 {
   "name": "iobroker.radar",
   "description": "This adapter interfaces ioBroker with Raspberry GPIO pins",
-  "version": "0.6.3",
+  "version": "0.7.0",
   "author": "frankjoke <frankjoke@hotmail.com>",
   "contributors": [
     "frankjoke <frankjoke@hotmail.com>"
