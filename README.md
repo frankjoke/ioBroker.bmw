@@ -29,6 +29,9 @@ Bei AllUnknownBTs ist es ein Array von Objekten welche die BT-Adresse, den Herst
 * Adapter requires node >= v4.3.*
 
 ## Changelog
+### 0.7.1 
+* AWenn hcitool vorhanden ist wird auch mit l2ping nach Bluetooth-Adressen gesucht. Damit wird die Verfügbarkeit von Bluetooth auf Linux weiter verbessert.  
+
 ### 0.7.0 
 * Arp-scan und Noble BT scan kreieren 'AllUnknown*' Variablen die die IP/Mac-Adressen und BT-Adressen listen welche gefunden werden aber nicht in der Device-Liste sind!  
 

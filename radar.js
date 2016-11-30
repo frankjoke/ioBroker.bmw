@@ -506,7 +506,7 @@ function scanAll() {
                     })
                 ));
 */
-            if (doHci && item.hasBT && !item.bluetooth.startsWith('7C:2F:80') && !item.btHere) 
+            if (doHci && item.hasBT && !item.bluetooth.startsWith('7C:2F:80') && !item.btHere) {
                 all.push(pExec('hcitool name ' + item.bluetooth)
                     .then(stdout => {
                         let bth = stdout > "";
@@ -516,8 +516,12 @@ function scanAll() {
                         }
                         return bth;
                     },err => false)
-                    .then(bt => item.btHere = bt));               
-            
+                    .then(bt => item.btHere = bt)
+                );
+                all.push(pExec('l2ping -c1 '+ item.bluetooth)
+                    .then(() => (item.btHere = true), () => false)
+                );               
+            }
             all.push(wait(100));
             return Promise.all(all)
                 .then(obj => item.name, err => _D(`err in ${item.name}: ${_O(err)}`));
