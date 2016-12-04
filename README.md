@@ -25,12 +25,19 @@ Beide Variablen enthalten arrays mit den unbekannten devices. AllUnknownIPs ist 
 Somit sollten Geräte leicht identifiziert werden können.
 Bei AllUnknownBTs ist es ein Array von Objekten welche die BT-Adresse, den Herstellernamen falls bekannt und die Signalstärke (rssi, je niedriger desto weiter weg is das device) enthält.
 
+Wenn die IP-adresse mit 'http' beginnt interpretiert radar sie als web-adresse (url) und fragt die Adresse ab anstatt ping zu verwenden. Damit kann der Status eines Webservers (wie z.B. http(s)://iobroker.net) geprüft werden.
+Bei https kann aber ein Fehler bei den Schlüsseln auch ein Fehler gemeldet werden. So meldert https://forum.iobroker.net einen Fehler da das Forum nicht im domainschlüssel gelistet ist. Das vorige Beispiel ohne 'forum.' funtioniert.
+
 ## Important/Wichtig
 * Adapter requires node >= v4.3.*
 
 ## Changelog
+### 0.7.2 
+* Wenn die ip-adresse mit 'http' beginnt interpretiert radar sie als web-adresse und fragt die Adresse ab anstatt ping zu verwenden. Damit kann der Status eines Webservers (wie z.B. http://iobroker.net) geprüft werden. 
+
+## Changelog
 ### 0.7.1 
-* AWenn hcitool vorhanden ist wird auch mit l2ping nach Bluetooth-Adressen gesucht. Damit wird die Verfügbarkeit von Bluetooth auf Linux weiter verbessert.  
+* Wenn hcitool vorhanden ist wird auch mit l2ping nach Bluetooth-Adressen gesucht. Damit wird die Verfügbarkeit von Bluetooth auf Linux weiter verbessert.  
 
 ### 0.7.0 
 * Arp-scan und Noble BT scan kreieren 'AllUnknown*' Variablen die die IP/Mac-Adressen und BT-Adressen listen welche gefunden werden aber nicht in der Device-Liste sind!  

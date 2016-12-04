@@ -445,7 +445,7 @@ function scanAll() {
                 _D(`Noble found ${found} from list and returned ${Object.keys(data).length} more not on list: ${_O(unkn)}`);
                 return makeState('AllUnknownBTs',JSON.stringify(unkn));
             }, err => false),
-        doMac ? pExec('sudo arp-scan -lgq --retry=10')
+        doMac ? pExec('arp-scan -lgq --retry=10')
             .then(res => res && res.match(/(\d*\.){3}\d*\s*([\dA-F]{2}\:){5}[\dA-F]{2}/gi))
             .then(res => pSeriesP(res, item => {
                 const s = item.split('\t');
@@ -477,23 +477,26 @@ function scanAll() {
                 if (printerCount===0)
                     all.push(scanECB(item));
             } else if (item.hasIP && !item.ipHere) 
-                all.push(c1pP(ping.sys.probe)(item.ip)
-                    .then(res => {
-//                        _I(`${item.name}:${item.ip} = ${res}`);
-                        if (!res && doFping)
-                            return pExec('fping '+item.ip)
-                                .then(stdout => / is alive/.test(stdout) || res,false);
-                        return res;
-                    })
-                    .then(iph => {
-//                        _I(`IP ${item.name}:${item.ip} = ${iph}`);
-                        if (iph) {
-                            item.ipHere = true;
-                            if (item.printer && printerCount===0)
-                                return scanHP(item);
-                        }
-                        return iph;
-                    })
+                if (item.ip.toUpperCase().startsWith('HTTP'))
+                    all.push(pGet(item.ip).then(x => true, e => false).then(x => item.ipHere = x || item.ipHere));
+                else
+                    all.push(c1pP(ping.sys.probe)(item.ip)
+                        .then(res => {
+    //                        _I(`${item.name}:${item.ip} = ${res}`);
+                            if (!res && doFping)
+                                return pExec('fping '+item.ip)
+                                    .then(stdout => / is alive/.test(stdout) || res,false);
+                            return res;
+                        })
+                        .then(iph => {
+    //                        _I(`IP ${item.name}:${item.ip} = ${iph}`);
+                            if (iph) {
+                                item.ipHere = true;
+                                if (item.printer && printerCount===0)
+                                    return scanHP(item);
+                            }
+                            return iph;
+                        })
                 );
             
 /*
