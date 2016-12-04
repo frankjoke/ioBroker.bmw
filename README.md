@@ -26,7 +26,7 @@ Somit sollten Geräte leicht identifiziert werden können.
 Bei AllUnknownBTs ist es ein Array von Objekten welche die BT-Adresse, den Herstellernamen falls bekannt und die Signalstärke (rssi, je niedriger desto weiter weg is das device) enthält.
 
 Wenn die IP-adresse mit 'http' beginnt interpretiert radar sie als web-adresse (url) und fragt die Adresse ab anstatt ping zu verwenden. Damit kann der Status eines Webservers (wie z.B. http(s)://iobroker.net) geprüft werden.
-Bei https kann aber ein Fehler bei den Schlüsseln auch ein Fehler gemeldet werden. So meldert https://forum.iobroker.net einen Fehler da das Forum nicht im domainschlüssel gelistet ist. Das vorige Beispiel ohne 'forum.' funtioniert.
+Bei https kann aber ein Fehler bei den Schlüsseln auch als 'nicht vorhanden' gemeldet werden. So meldet https://forum.iobroker.net abwesend da das Forum nicht im domainschlüssel gelistet ist. Das vorige Beispiel ohne 'forum.' funktioniert.
 
 ## Important/Wichtig
 * Adapter requires node >= v4.3.*
