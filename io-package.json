@@ -22,7 +22,7 @@
 		"type":                     "hardware"
     },
     "native": {
-        "devices":     	[{"name":"Ich","ip":"127.0.0.1","macs":"","bluetooth":""}],
+        "devices":     	[{"name":"Ich","ip":"localhost","macs":"","bluetooth":""}],
         "scandelay":   	60,
 		"printerdelay":	500,
         "external":     300,
