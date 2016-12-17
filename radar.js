@@ -123,7 +123,8 @@ function stop(dostop) {
     scanTimer = null;
     _W('Adapter disconnected and stopped');
     if (dostop)
-        adapter.stop();
+        process.exit();
+//        adapter.stop();
 } 
 
 adapter.on('message', obj => processMessage(obj));
