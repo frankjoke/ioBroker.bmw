@@ -2,9 +2,9 @@
 
 [![NPM version](http://img.shields.io/npm/v/iobroker.radar.svg)](https://www.npmjs.com/package/iobroker.radar)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.radar.svg)](https://www.npmjs.com/package/iobroker.radar)
-**Tests:** Linux: [![Travis-CI](http://img.shields.io/travis/frankjoke/iobroker.radar/master.svg)](https://travis-ci.org/frankjoke/iobroker.radar)
+**Tests:** Linux/Mac: [![Travis-CI](http://img.shields.io/travis/frankjoke/iobroker.radar/master.svg)](https://travis-ci.org/frankjoke/iobroker.radar)
 Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjoke/iobroker.radar?branch=master&svg=true)](https://ci.appveyor.com/project/frankjoke/ioBroker-nut/)
-Ma: not possible
+
 
 [![NPM](https://nodei.co/npm/iobroker.radar.png?downloads=true)](https://nodei.co/npm/iobroker.radar/)
 
