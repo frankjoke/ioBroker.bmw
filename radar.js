@@ -122,8 +122,8 @@ function stop(dostop) {
         clearInterval(scanTimer);
     scanTimer = null;
     _W('Adapter disconnected and stopped');
-    if (dostop)
-        process.exit();
+//    if (dostop)
+//        process.exit();
 //        adapter.stop();
 } 
 
