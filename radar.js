@@ -123,7 +123,7 @@ function stop(dostop) {
     scanTimer = null;
     _W('Adapter disconnected and stopped');
     if (dostop)
-        // process.exit();
+        process.exit();
 //        adapter.stop();
 } 
 
