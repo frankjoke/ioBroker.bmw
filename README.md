@@ -41,6 +41,10 @@ Bei https kann aber ein Fehler bei den Schlüsseln auch als 'nicht vorhanden' ge
 * Adapter requires node >= v4.3.*
 
 ## Changelog
+### 0.7.3 
+* Officejext 6?00 Series support für Tintenfüllstände hinzugefügt 
+* Testing enabled
+
 ### 0.7.2 
 * Wenn die ip-adresse mit 'http' beginnt interpretiert radar sie als web-adresse und fragt die Adresse ab anstatt ping zu verwenden. Damit kann der Status eines Webservers (wie z.B. http://iobroker.net) geprüft werden. 
 

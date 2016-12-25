@@ -361,14 +361,16 @@ function scanHP(item) {
 //    _I(`should call ${item.ip} for printer data`);
     return pGet('http://'+item.ip+'/DevMgmt/ConsumableConfigDyn.xml',2)
         .then(body => xmlParseString(body.trim()))
-        .then(result => pSeriesP(result["ConsumableConfigDyn"]["ConsumableInfo"], item => {
-//                    _D(`parser ${item["dd:ConsumableTypeEnum"]}`);
+//        .then(result => _I(`parser ${_O(result,3)}`,result))
+        .then(result => result["ConsumableConfigDyn"] ? result["ConsumableConfigDyn"] : result)
+        .then(result => pSeriesP(result["ConsumableInfo"], item => {
+//            _I(`parser ${_O(item)}`);
             if (item["ConsumableTypeEnum"]!="ink")
                 return Promise.resolve('No Ink'); 
             let p = "P" + item["ConsumableStation"],
                 lc = item["ConsumableLabelCode"],
                 idnc = idn + lc + '.',
-                d = item["Installation"]["Date"],
+                d = item["Installation"] ? item["Installation"]["Date"] : null,
                 l = parseInt(item["ConsumablePercentageLevelRemaining"]),
                 ci = item["ConsumableIcon"],
                 s = ci["Shape"],
@@ -376,7 +378,7 @@ function scanHP(item) {
                 rgb = fc["Blue"] | (fc["Green"] << 8) | (fc["Red"] << 16),
                 n = item["ConsumableSelectibilityNumber"];
             rgb = '#' + (0x1000000 + rgb).toString(16).slice(1);
-            let ss = `${p} = ${lc}, ${d}, ${l}%, ${n}, ${rgb}, ${s}`;
+            let ss = `${p} = ${lc},${d ? d + ',': ''} ${l}%, ${n}, ${rgb}, ${s}`;
             colors.push(ss);
             if (l<=10)
                 below10.push(lc);
