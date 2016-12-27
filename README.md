@@ -14,7 +14,7 @@ ioBroker radar für IP und Bluetooth Adapter
 
 # ioBroker radar Adapter für IP und Bluetooth
 Mit diesem Adapter kann man testen ob Geräte via Netzwerk oder Bluetooth verfügbar sind.
-Er benutzt Ping (und wenn installiert auf Linux auch fping und arp-scan, 'sudo apt-get fping arp-scan' erledigt die Installation am Raspi).
+Er benutzt Ping (und wenn installiert auf Linux auch fping und arp-scan, 'sudo apt-get install fping arp-scan' erledigt die Installation am Raspi).
 Für Bluetooth verwendet es neben Noble [http://www.nirsoft.net/utils/bluetooth_viewer.html] unter Windows und hcitool auf Linux.
 Noble ist nun optional und wenn es nicht installiert werden kann wird der Adapter trotzdem laufen.
 
