@@ -41,6 +41,10 @@ Bei https kann aber ein Fehler bei den Schlüsseln auch als 'nicht vorhanden' ge
 * Adapter requires node >= v4.3.*
 
 ## Changelog
+### 0.7.4 
+* More Bluetoot debug messages if debug enabled
+
+## Changelog
 ### 0.7.3 
 * Officejext 6?00 Series support für Tintenfüllstände hinzugefügt 
 * Testing enabled

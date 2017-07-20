@@ -428,7 +428,7 @@ function scanAll() {
         .then(data =>  {
             for (let item of scanList.values()) 
                 if (data.toUpperCase().indexOf(item.bluetooth)>0) {
-//                    _I(`doBtv found  ${item.name}`);
+                    _D(`doBtv found  ${item.name}`);
                     item.btHere = true;              
                 }  
         }) : wait(10),
@@ -439,12 +439,13 @@ function scanAll() {
                 for(let key of scanList.values()) {
                     if (data[key.bluetooth]) {
                         delete data[key.bluetooth];
+                        _D(`Noble found  ${key.name}`);
                         key.btHere = true;
                         ++found;
                     }
                 }
                 for(let d in data)
-                    unkn.push(data[d]);
+                    unkn.push(_D(`Noble found also unknown: ${_O(data[d])}`,data[d]));
                 _D(`Noble found ${found} from list and returned ${Object.keys(data).length} more not on list: ${_O(unkn)}`);
                 return makeState('AllUnknownBTs',JSON.stringify(unkn));
             }, err => false),
@@ -519,16 +520,22 @@ function scanAll() {
                         if (bth) {
                             item.btname = stdout.trim();
                             item.btHere = true;
+                        _D(`hcitool found ${item.name} as ${item.btname}`);
                         }
                         return bth;
                     },err => false)
                     .then(bt => item.btHere = bt)
+                    .then(bt => !bt ? wait(100)
+                        .then(x => pExec('!l2ping -c1 '+ item.bluetooth))
+                        .then(op => op.length>0 ? 
+                                _D(`l2ping found ${item.name} with "${op}"`,(item.btHere = true)) 
+                                : _D(`l2ping for ${item.name} returned nothing!`,false),
+                            x => _D(`l2ping for ${item.name} err: "${x}"`,false))
+                        : false )
+                    .catch(x => x)
+                    .then (x => wait(100))
                 );
-                all.push(pExec('l2ping -c1 '+ item.bluetooth)
-                    .then(() => (item.btHere = true), () => false)
-                );               
             }
-            all.push(wait(100));
             return Promise.all(all)
                 .then(obj => item.name, err => _D(`err in ${item.name}: ${_O(err)}`));
         },50).then(res => res, err => _D(`err ${_O(err)}`,err))
