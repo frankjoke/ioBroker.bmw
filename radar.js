@@ -525,8 +525,9 @@ function scanAll() {
                         return bth;
                     },err => false)
                     .then(bt => item.btHere = bt)
-                    .then(bt => !bt ? wait(100)
+                    .then(bt => !bt ? wait(200)
                         .then(x => pExec('!l2ping -c1 '+ item.bluetooth))
+                        .then(op => op, x => _D(x,pExec('!l2ping -c1 '+ item.bluetooth)))
                         .then(op => op.length>0 ? 
                                 _D(`l2ping found ${item.name} with "${op}"`,(item.btHere = true)) 
                                 : _D(`l2ping for ${item.name} returned nothing!`,false),
