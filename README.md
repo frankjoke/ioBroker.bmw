@@ -41,6 +41,10 @@ Bei https kann aber ein Fehler bei den Schlüsseln auch als 'nicht vorhanden' ge
 * Adapter requires node >= v4.3.*
 
 ## Changelog
+### 1.0.0 
+* Made it first official version
+
+## Changelog
 ### 0.7.4 
 * More Bluetoot debug messages if debug enabled
 * l2ping problem resolved 
