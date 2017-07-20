@@ -41,7 +41,7 @@ Bei https kann aber ein Fehler bei den Schlüsseln auch als 'nicht vorhanden' ge
 * Adapter requires node >= v4.3.*
 
 ## Changelog
-### 1.0.0 
+### 1.0.1 
 * Made it first official version
 
 ## Changelog
