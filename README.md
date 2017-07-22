@@ -38,11 +38,11 @@ Wenn die IP-adresse mit 'http' beginnt interpretiert radar sie als web-adresse (
 Bei https kann aber ein Fehler bei den Schlüsseln auch als 'nicht vorhanden' gemeldet werden. So meldet https://forum.iobroker.net abwesend da das Forum nicht im domainschlüssel gelistet ist. Das vorige Beispiel ohne 'forum.' funktioniert.
 
 ## Important/Wichtig
-* Adapter requires node >= v4.3.*
+* Adapter requires node >= v4.3.*; for windows it need to be smaller than 7.0!
 
 ## Changelog
-### 1.0.1 
-* Made it first official version
+### 1.0.2
+* Made it first official version, but not working on Windows nodejs >=7.0!
 
 ## Changelog
 ### 0.7.4 
