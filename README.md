@@ -53,13 +53,13 @@ Jede Meldung besteht aus dem Meldungs-Text und am Ende eine severity-einstufung.
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
-### 1.1.0
+### 1.1.1
 * Added UWZ Weather warning
 * Changed listing of unkown IP's and BT's to remove double entries
 
 ## Changelog
 ### 1.0.2
-* Made it first official version, but not working on Windows nodejs >=7.0!
+* Made it first official version
 
 ## Changelog
 ### 0.7.4 

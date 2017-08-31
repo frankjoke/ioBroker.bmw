@@ -634,7 +634,7 @@ function getUWZ() {
         .then(w => {
             let wt = w.join('\n'),
                 wl = w.length,
-                m = adapter.config.numuwz;
+                m = parseInt(adapter.config.numuwz);
             wt = wt == '' ? "No warnings" : wt;
             if (wt != wlast) {
                 wlast = wt;
@@ -744,7 +744,7 @@ function main() {
         .then(() => PgetObjectList({ include_docs: true }))
         .then(res => {
             var r = {};
-            if (!adapter.config.delayuwz)
+            if (!adapter.config.delayuwz || parseInt(adapter.config.delayuwz)<=0)
                 return Promise.resolve();
             res.rows.map(i => r[i.doc._id] = i.doc)
             if(r['system.config'] && r['system.config'].common.language) 
@@ -755,7 +755,7 @@ function main() {
                 return pGet(`http://feed.alertspro.meteogroup.com/AlertsPro/AlertsProPollService.php?method=lookupCoord&lat=${adapter.config.latitude}&lon=${adapter.config.longitude}`)
                     .then(res => JSON.parse(res)[0], e => _W(`Cpuld not get UWZ Area ID: ${e} for Laenge: ${adapter.config.longitude} Breite: ${adapter.config.latitude}`))
                     .then(res => doUwz = res && res.AREA_ID ? res.AREA_ID : null)
-                    .then(() => getUWZ(), setInterval(getUWZ, adapter.config.delayuwz * 1000))
+                    .then(() => getUWZ(), setInterval(getUWZ, parseInt(adapter.config.delayuwz) * 1000))
             } else return Promise.reject(_W('No geo location data found configured in admin to calculate UWZ AREA ID!'));
         }, err => doUwz = null)
         .then(res => {
