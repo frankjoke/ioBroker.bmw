@@ -1,36 +1,44 @@
 {
     "common": {
-        "name":                     "bmw",
-        "version":                  "0.2.0",
-        "title":                    "Adapter to inspect BMW ConnectedDrive data",
-        "desc":                     {
+        "name": "bmw",
+        "version": "0.2.0",
+        "title": "Adapter to inspect BMW ConnectedDrive data",
+        "desc": {
             "en": "BMW en to do",
             "de": "BMW de to do"
         },
         "authors": [
             "frankjoke <frankjoke@hotmail.com>"
         ],
-        "license":                  "MIT",
-        "platform":                 "Javascript/Node.js",
-        "mode":                     "daemon",
-        "availableModes":           ["daemon"],
-        "readme":                   "https://github.com/frankjoke/iobroker.bmw/blob/master/README.md",
-        "loglevel":                 "info",
-        "icon":                     "bmw.png",
-        "keywords":                 ["BMW"],
-        "extIcon":                  "https://raw.githubusercontent.com/frankjoke/iobroker.bmw/master/admin/bmw.png",
-		"type":                     "hardware"
+        "license": "MIT",
+        "platform": "Javascript/Node.js",
+        "mode": "daemon",
+        "availableModes": [
+            "daemon"
+        ],
+        "readme": "https://github.com/frankjoke/iobroker.bmw/blob/master/README.md",
+        "loglevel": "info",
+        "icon": "bmw.png",
+        "keywords": [
+            "BMW"
+        ],
+        "extIcon": "https://raw.githubusercontent.com/frankjoke/iobroker.bmw/master/admin/bmw.png",
+        "type": "hardware"
     },
     "native": {
-        "devices":     	[{"name":"Ich","ip":"localhost","macs":"","bluetooth":""}],
-        "scandelay":   	60,
-		"printerdelay":	500,
-        "external":     300,
-        "delayaway":    10,
-        "delayuwz":     1800,
-        "numuwz":       0
+        "devices": [
+            {
+                "name": "Ich",
+                "ip": "localhost",
+                "macs": "",
+                "bluetooth": ""
+            }
+        ],
+        "scandelay": 60,
+        "server": "www.bmw-connecteddrive.de",
+        "email": "email/usename",
+        "password": "password",
+        "services": "efficiency, dynamic, navigation, remoteservices/chargingprofile, servicepartner, service, specs"
     },
-    "objects": [
-
-    ]
+    "objects": []
 }

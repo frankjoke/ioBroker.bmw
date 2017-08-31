@@ -30,17 +30,16 @@
         "bmw adapter settings": {"en": "bmw adapter settings", "de": "BMW Adapter-Einstellungen"},
         "bmw settings":         {"en": "bmw settings",         "de": "BMW-Einstellungen"},
         "Device setup":        {"en": "individual device setup",  "de": "Individuelle Suchobjekt-Einstellungen"},
-        "UWZ Delay:":   {"en": "Delay in seconds between UWZ scans 0=no UWZ scan: ", "de": "Verzögerung in Sekunden zwischen UWZ-Abfragen 0=UWZ ausgeschaltet: "},
-        "Max UWZ vars:":   {"en": "How many seperate messages  0=all messages together: ", "de": "Maximum Meldungen in UWZ 0=alle Meldungen zusammen: "},
-        "Scan Delay:":   {"en": "Delay in seconds between scans (>=30): ", "de": "Verzögerung in Sekunden zwischen Abfragen (>=30): "},
-        "Delay Away:":   {"en": "How often should be a device not detected before it's marked as away' (>=2): ",     
-                "de": "Wie oft muss ein Device nicht verfügbar sein bevor es als 'nicht da' markiert wird (>=2): "},
-        "Printer Delay:":   {"en": "Delay in scans between printer fill check (>=100): ",     
-                "de": "Verzögerung in scans zwischen Druckerfüllstand-Abfrage (>=100): "},
-        "External Network Scan Delay:":   {"en": "Delay in seconds between External Network IP scan (0 = no scan): ",     
-                "de": "Verzögerung in Sekunden zwischen den externen Netwerkabfragen (wenn 0 dann ausgeschaltet): "},
-        "description":  {"de":"IP-Adressen können als Name oder Zahlen angegeben werden. Bluetooth ist immer '01:23:45:67:89:ab', MAC-Adressen sind in der gleichen Form wie Bluetooth aber es können mehrere mit ',' getrennt angegeben werden. Eine der drei (IP, MAC oder BT) muß mindestens angegeben werden. MAC scan steht nur zur Verfügung wenn 'arp-scan' installiert ist",
-            "en": "IP can be name or number (like fritz.box or 168.192.0.1). Bluetooth is always '01:23:45:67:89:ab', either or both of them have to be there."}
+        "Services:":        {"en": "services you want to receive from ConnectedDrive: ",  "de": "Services die ConnectedDrive abfragen soll: "},
+        "Scan Delay:":   {"en": "Delay in seconds between scans (>=300): ", "de": "Verzögerung in Sekunden zwischen Abfragen (>=300): "},
+        "Server:":   {"en": "ConnectedDrive server, in Europe 'www.bmw-connecteddrive.de': ",     
+                "de": "ConnectedDrive Server, in Europa 'www.bmw-connecteddrive.de': "},
+        "Email:":   {"en": "email as username used for connected drive: ",     
+                "de": "Email die für ConnectedDrive-Login verwendet wird: "},
+        "Password:":   {"en": "password to connected drive service: ",     
+                "de": "Passwort für ConnectedDrive Service: "},
+        "description":  {"de":"Bla Bla de",
+            "en": "Bla Bla Bla en"}
     };
 
     function setValue(id, value, onChange) {
@@ -119,12 +118,14 @@
     <h4 class="translate">bmw settings</h4>
     <table>
         <tr><td class="translate">Scan Delay:</td><td><input class="value number" id="scandelay" type="input" size="5"/></td></tr>
-        <tr><td class="translate">Delay Away:</td><td><input class="value number" id="delayaway" type="input" size="5"/></td></tr>
-        <tr><td class="translate">Printer Delay:</td><td><input class="value number" id="printerdelay" type="input" size="5"/></td></tr>
-        <tr><td class="translate">External Network Scan Delay:</td><td><input class="value number" id="external" type="input" size="5"/></td></tr>
-        <tr><td class="translate">UWZ Delay:</td><td><input class="value number" id="delayuwz" type="input" size="5"/></td></tr>
-        <tr><td class="translate">Max UWZ vars:</td><td><input class="value number" id="numuwz" type="input" size="5"/></td></tr>
+        <tr><td class="translate">Email:</td><td><input class="value string" id="email" type="input" size="30"/></td></tr>
+        <tr><td class="translate">Password:</td><td><input class="value password" id="password" type="input" size="30"/></td></tr>
+        <tr><td class="translate">Server:</td><td><input class="value string" id="server" type="input" size="30"/></td></tr>
     </table>
+    <p>
+        <span class="translate">Services:</span> <textarea class="value" id="services" style="width:90%;height:50px"></textarea><br>
+    </p>
+
     <h4 class="translate">Device setup</h4>
     <table id="devices"></table><div id="pager-devices"></div>
     <p class="translate">description</p>
