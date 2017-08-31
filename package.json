@@ -1,12 +1,12 @@
 {
-  "name": "iobroker.radar",
-  "description": "Radar adapter for IP and Bluetooth, it also can scan HP printers ink and ECB currency to EUR",
+  "name": "iobroker.bmw",
+  "description": "bmw adapter for IP and Bluetooth, it also can scan HP printers ink and ECB currency to EUR",
   "version": "1.1.1",
   "author": "frankjoke <frankjoke@hotmail.com>",
   "contributors": [
     "frankjoke <frankjoke@hotmail.com>"
   ],
-  "homepage": "https://github.com/frankjoke/iobroker.radar",
+  "homepage": "https://github.com/frankjoke/iobroker.bmw",
   "license": "MIT",
   "keywords": [
     "iobroker",
@@ -16,7 +16,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/frankjoke/iobroker.radar"
+    "url": "https://github.com/frankjoke/iobroker.bmw"
   },
   "devDependencies": {
     "chai": "^3.4.1",
@@ -28,9 +28,9 @@
     "mocha": "^2.3.4"
   },
   "bugs": {
-    "url": "https://github.com/frankjoke/iobroker.radar/issues"
+    "url": "https://github.com/frankjoke/iobroker.bmw/issues"
   },
-  "main": "radar.js",
+  "main": "bmw.js",
   "scripts": {
     "test": "node node_modules/mocha/bin/mocha"
   },

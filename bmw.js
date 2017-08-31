@@ -1,6 +1,6 @@
 /**
  *
- *      iobroker radar Adapter
+ *      iobroker bmw Adapter
  *
  *      (c) 2016- <frankjoke@hotmail.com>
  *
@@ -12,7 +12,7 @@
 /*jslint node: true */
 "use strict";
 const utils = require(__dirname + '/lib/utils'); // Get common adapter utils
-const adapter = utils.adapter('radar');
+const adapter = utils.adapter('bmw');
 const btbindir = __dirname + '\\bin\\bluetoothview\\';
 
 const util = require('util');
@@ -685,7 +685,7 @@ function main() {
         adapter.config.printerdelay = 100;
     printerDelay = adapter.config.printerdelay;
 
-    _I(`radar set to scan every ${adapter.config.scandelay} sec and printers every ${printerDelay} scans.`);
+    _I(`bmw set to scan every ${adapter.config.scandelay} sec and printers every ${printerDelay} scans.`);
 
     _I(`BT Bin Dir = '${btbindir}'`);
 
@@ -759,8 +759,8 @@ function main() {
             } else return Promise.reject(_W('No geo location data found configured in admin to calculate UWZ AREA ID!'));
         }, err => doUwz = null)
         .then(res => {
-            _I(`radar adapter initialized ${scanList.size} devices, ExternalNetwork = ${adapter.config.external}.`);
-            _I(`radar set use of noble(${!!noble}), fping(${doFping}), doMac(${doMac}), doHci(${doHci}), doBtv(${doBtv}) and doUwz(${doUwz},${adapter.config.delayuwz},${adapter.config.numuwz},${lang}).`);
+            _I(`bmw adapter initialized ${scanList.size} devices, ExternalNetwork = ${adapter.config.external}.`);
+            _I(`bmw set use of noble(${!!noble}), fping(${doFping}), doMac(${doMac}), doHci(${doHci}), doBtv(${doBtv}) and doUwz(${doUwz},${adapter.config.delayuwz},${adapter.config.numuwz},${lang}).`);
             scanTimer = setInterval(scanAll, scanDelay);
             if (parseInt(adapter.config.external) > 0)
                 setInterval(scanExtIP, parseInt(adapter.config.external) * 1000);
@@ -779,7 +779,7 @@ function main() {
                 .then(x => _D(`Del Object: ${id}`), err => _D(`Del Object err: ${_O(err)}`)) ///TC
         }, 10))
         .catch(err => {
-            _W(`radar initialization finished with error ${_O(err)}, will stop adapter!`);
+            _W(`bmw initialization finished with error ${_O(err)}, will stop adapter!`);
             stop(true);
             throw err;
         })

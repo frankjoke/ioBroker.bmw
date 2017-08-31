@@ -1,11 +1,11 @@
 {
     "common": {
-        "name":                     "radar",
+        "name":                     "bmw",
         "version":                  "1.1.1",
-        "title":                    "Radar adapter for IP and Bluetooth",
+        "title":                    "Adapter to inspect BMW ConnectedDrive data",
         "desc":                     {
-            "en": "This adapter can scan IP and bluetooth addresses foravailability and also get exchange rates from European Central Bank and get ing fill from HP printers",
-            "de": "Dieser Adapter überprüft IP-Adressen und Bluetooth-Adressen auf Verfügbarkeit. Er kann auch Wechselkurse der ECB und Tintenfüllstände für HP anzeigen"
+            "en": "BMW en to do",
+            "de": "BMW de to do"
         },
         "authors": [
             "frankjoke <frankjoke@hotmail.com>"
@@ -14,11 +14,11 @@
         "platform":                 "Javascript/Node.js",
         "mode":                     "daemon",
         "availableModes":           ["daemon"],
-        "readme":                   "https://github.com/frankjoke/iobroker.radar/blob/master/README.md",
+        "readme":                   "https://github.com/frankjoke/iobroker.bmw/blob/master/README.md",
         "loglevel":                 "info",
-        "icon":                     "radar.png",
-        "keywords":                 ["ping", "ip", "mac", "bluetooth", "radar"],
-        "extIcon":                  "https://raw.githubusercontent.com/frankjoke/iobroker.radar/master/admin/radar.png",
+        "icon":                     "bmw.png",
+        "keywords":                 ["BMW"],
+        "extIcon":                  "https://raw.githubusercontent.com/frankjoke/iobroker.bmw/master/admin/bmw.png",
 		"type":                     "hardware"
     },
     "native": {
