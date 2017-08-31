@@ -1,7 +1,7 @@
 {
     "common": {
         "name":                     "bmw",
-        "version":                  "1.1.1",
+        "version":                  "0.2.0",
         "title":                    "Adapter to inspect BMW ConnectedDrive data",
         "desc":                     {
             "en": "BMW en to do",

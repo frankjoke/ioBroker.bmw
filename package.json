@@ -1,7 +1,7 @@
 {
   "name": "iobroker.bmw",
   "description": "bmw adapter for IP and Bluetooth, it also can scan HP printers ink and ECB currency to EUR",
-  "version": "1.1.1",
+  "version": "0.2.0",
   "author": "frankjoke <frankjoke@hotmail.com>",
   "contributors": [
     "frankjoke <frankjoke@hotmail.com>"
@@ -10,9 +10,7 @@
   "license": "MIT",
   "keywords": [
     "iobroker",
-    "home automation",
-    "ping",
-    "bluetooth"
+    "BMW"
   ],
   "repository": {
     "type": "git",
@@ -35,10 +33,7 @@
     "test": "node node_modules/mocha/bin/mocha"
   },
   "dependencies": {
-    "ping": "^0.2.0",
-    "xml2js": "^0.4.17"
   },
   "optionalDependencies": {
-    "noble": "^1.7.0"
   }
 }
