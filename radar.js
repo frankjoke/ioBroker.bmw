@@ -619,7 +619,8 @@ function isMacBt(str) {
 }
 
 var ain = '',
-    wlast = null;
+    wlast = null,
+    lang = '';
 
 function getUWZ() {
     pGet('http://feed.alertspro.meteogroup.com/AlertsPro/AlertsProPollService.php?method=getWarning&language=de&areaID=' + doUwz)
@@ -628,7 +629,7 @@ function getUWZ() {
             var w = data ? data.results : null;
             if (!w)
                 return Promise.reject('UWZ data err: ' + _O(data));
-            return w.map(i => i.payload.translationsLongText.DE + ': ' + i.payload.levelName);
+            return w.map(i => (lang == 'de' ? i.payload.translationsLongText.DE : i.payload.longText) + ': ' + i.payload.levelName);
         })
         .then(w => {
             let wt = w.join('\n'),
@@ -746,6 +747,8 @@ function main() {
             if (!adapter.config.delayuwz)
                 return Promise.resolve();
             res.rows.map(i => r[i.doc._id] = i.doc)
+            if(r['system.config'] && r['system.config'].common.language) 
+                lang = r['system.config'].common.language;
             if (r['system.config'] && r['system.config'].common.latitude) {
                 adapter.config.latitude = parseFloat(r['system.config'].common.latitude);
                 adapter.config.longitude = parseFloat(r['system.config'].common.longitude);
@@ -757,7 +760,7 @@ function main() {
         }, err => doUwz = null)
         .then(res => {
             _I(`radar adapter initialized ${scanList.size} devices, ExternalNetwork = ${adapter.config.external}.`);
-            _I(`radar set use of noble(${!!noble}), fping(${doFping}), doMac(${doMac}), doHci(${doHci}), doBtv(${doBtv}) and doUwz(${doUwz},${adapter.config.delayuwz},${adapter.config.numuwz}).`);
+            _I(`radar set use of noble(${!!noble}), fping(${doFping}), doMac(${doMac}), doHci(${doHci}), doBtv(${doBtv}) and doUwz(${doUwz},${adapter.config.delayuwz},${adapter.config.numuwz},${lang}).`);
             scanTimer = setInterval(scanAll, scanDelay);
             if (parseInt(adapter.config.external) > 0)
                 setInterval(scanExtIP, parseInt(adapter.config.external) * 1000);

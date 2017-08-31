@@ -48,7 +48,6 @@ Es kann das Intervall (in Sekunden) zwischen den Abfragen angegeben werden, defa
 Wenn der Wert von Max Messages >0 ist dann werden genau so viele states erzeugt die entweder leer sind oder Meldungen enthalten.
 Wenn 0 angegeben wird (als default) wird nur ein State erzeugt welcher dann für jede Meldung eine Zeile enthält.
 Jede Meldung besteht aus dem Meldungs-Text und am Ende eine severity-einstufung. 
-ToDo: Für nicht-Deutsche iobroker-Installationen den englischen Text abfragen!
 
 ## Important/Wichtig
 * Adapter requires node >= v4.3.*!
