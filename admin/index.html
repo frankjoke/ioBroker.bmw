@@ -30,10 +30,11 @@
         "radar adapter settings": {"en": "radar adapter settings", "de": "radar Adapter-Einstellungen"},
         "radar settings":         {"en": "radar settings",         "de": "radar Einstellungen"},
         "Device setup":        {"en": "Device setup",  "de": "Device Einstellungen"},
-        "Scan Delay:":   {"en": "Delay in seconds between scans (>=30): ",     
-                "de": "Verzögerung in Sekunden zwischen Abfragen (>=30): "},
+        "UWZ Delay:":   {"en": "Delay in seconds between UWZ scans 0=no UWZ scan: ", "de": "Verzögerung in Sekunden zwischen UWZ-Abfragen 0=UWZ ausgeschaltet: "},
+        "Max UWZ vars:":   {"en": "How many seperate messages  0=all messages together: ", "de": "Maximum Meldungen in UWZ 0=alle Meldungen zusammen: "},
+        "Scan Delay:":   {"en": "Delay in seconds between scans (>=30): ", "de": "Verzögerung in Sekunden zwischen Abfragen (>=30): "},
         "Delay Away:":   {"en": "How often should be a device not detected before it's marked as away' (>=2): ",     
-                "de": "Wie of muss ein Device nicht verfügbar sein bevor es als 'nicht da' markiert wird (>=2): "},
+                "de": "Wie oft muss ein Device nicht verfügbar sein bevor es als 'nicht da' markiert wird (>=2): "},
         "Printer Delay:":   {"en": "Delay in scans between printer fill check (>=100): ",     
                 "de": "Verzögerung in scans zwischen Druckerfüllstand-Abfrage (>=100): "},
         "External Network Scan Delay:":   {"en": "Delay in seconds between External Network IP scan (0 = no scan): ",     
@@ -121,6 +122,8 @@
         <tr><td class="translate">Delay Away:</td><td><input class="value number" id="delayaway" type="input" size="5"/></td></tr>
         <tr><td class="translate">Printer Delay:</td><td><input class="value number" id="printerdelay" type="input" size="5"/></td></tr>
         <tr><td calss="translate">External Network Scan Delay:</td><td><input class="value number" id="external" type="input" size="5"/></td></tr>
+        <tr><td calss="translate">UWZ Delay:</td><td><input class="value number" id="delayuwz" type="input" size="5"/></td></tr>
+        <tr><td calss="translate">Max UWZ vars:</td><td><input class="value number" id="numuwz" type="input" size="5"/></td></tr>
     </table>
     <h4 class="translate">Device setup</h4>
     <table id="devices"></table><div id="pager-devices"></div>

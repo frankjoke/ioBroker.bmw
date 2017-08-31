@@ -12,6 +12,14 @@ Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjo
 
 # ioBroker radar Adapter für Netzwerk und Bluetooth-Geräte, HP Drucker und ECB-Kurse
 Mit diesem Adapter kann man testen ob Geräte via Netzwerk oder Bluetooth verfügbar sind.
+
+Er kann folgendes aufspüren oder anzeigen:
+* Geräte IP oder Netzwerkadressen
+* Bluetooth normal oder Bluetooth LE
+* HP drucker tintenfüllstände
+* ECB Umrechnungskurse zum Euro
+* UWZ Wetterwarnungen
+
 Er benutzt Ping (und wenn installiert auf Linux auch fping und arp-scan, 'sudo apt-get install fping arp-scan' erledigt die Installation am Raspi).
 Für Bluetooth verwendet es neben Noble [http://www.nirsoft.net/utils/bluetooth_viewer.html] unter Windows und hcitool auf Linux.
 Noble ist nun optional und wenn es nicht installiert werden kann wird der Adapter trotzdem laufen.
@@ -35,8 +43,20 @@ Bei AllUnknownBTs ist es ein Array von Objekten welche die BT-Adresse, den Herst
 Wenn die IP-adresse mit 'http' beginnt interpretiert radar sie als web-adresse (url) und fragt die Adresse ab anstatt ping zu verwenden. Damit kann der Status eines Webservers (wie z.B. http(s)://iobroker.net) geprüft werden.
 Bei https kann aber ein Fehler bei den Schlüsseln auch als 'nicht vorhanden' gemeldet werden. So meldet https://forum.iobroker.net abwesend da das Forum nicht im domainschlüssel gelistet ist. Das vorige Beispiel ohne 'forum.' funktioniert.
 
+Für Unwetterwarnungen muss im ioBroker-admin der Längen- und Breitengrad konfiguriert sein damit der Adapter den UWZ-Area_Code findet. 
+Es kann das Intervall (in Sekunden) zwischen den Abfragen angegeben werden, default ist 30 Minuten (1800 Sekunden). 
+Wenn der Wert von Max Messages >0 ist dann werden genau so viele states erzeugt die entweder leer sind oder Meldungen enthalten.
+Wenn 0 angegeben wird (als default) wird nur ein State erzeugt welcher dann für jede Meldung eine Zeile enthält.
+Jede Meldung besteht aus dem Meldungs-Text und am Ende eine severity-einstufung. 
+ToDo: Für nicht-Deutsche iobroker-Installationen den englischen Text abfragen!
+
 ## Important/Wichtig
-* Adapter requires node >= v4.3.*; for windows it need to be smaller than 7.0!
+* Adapter requires node >= v4.3.*!
+
+## Changelog
+### 1.1.0
+* Added UWZ Weather warning
+* Changed listing of unkown IP's and BT's to remove double entries
 
 ## Changelog
 ### 1.0.2
