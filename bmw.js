@@ -68,7 +68,9 @@ function pSeriesF(obj,fun,delay) { // fun gets(item) and returns a value
 }
 */
 function c2pP(f) {
-    //    _D(`c2pP: ${_O(f)}`);
+    if (!f)
+        throw new Error(`f = null in c2pP definition!`);
+//    _D(`c2pP: ${_O(f)}`);
     return function () {
         const args = Array.prototype.slice.call(arguments);
         return new Promise((res, rej) => {
@@ -106,19 +108,23 @@ function pRepeatP(nretry, fn, arg) {
 
 */
 
-var PgetObjectList = c2pP(adapter.objects.getObjectList),
-    PgetForeignObject = c2pP(adapter.getForeignObject),
-    PsetForeignObject = c2pP(adapter.setForeignObject),
-    PgetForeignObjects = c2pP(adapter.getForeignObjects),
-    PgetForeignState = c2pP(adapter.getForeignState),
-    PgetState = c2pP(adapter.getState),
-    PsetState = c2pP(adapter.setState),
-    PgetObject = c2pP(adapter.getObject),
-    PdeleteState = c2pP(adapter.deleteState),
-    PdelObject = c2pP(adapter.delObject),
-    PsetObject = c2pP(adapter.setObject),
-    PcreateState = c2pP(adapter.createState),
-    PextendObject = c2pP(adapter.extendObject);
+const P = {};
+
+function makePs() {
+    P.getObjectList = c2pP(adapter.objects.getObjectList),
+    P.getForeignObject = c2pP(adapter.getForeignObject),
+    P.setForeignObject = c2pP(adapter.setForeignObject),
+    P.getForeignObjects = c2pP(adapter.getForeignObjects),
+    P.getForeignState = c2pP(adapter.getForeignState),
+    P.getState = c2pP(adapter.getState),
+    P.setState = c2pP(adapter.setState),
+    P.getObject = c2pP(adapter.getObject),
+    P.deleteState = c2pP(adapter.deleteState),
+    P.delObject = c2pP(adapter.delObject),
+    P.setObject = c2pP(adapter.setObject),
+    P.createState = c2pP(adapter.createState),
+    P.extendObject = c2pP(adapter.extendObject);
+}
 
 var isStopping = false;
 const scanList = new Map();
@@ -131,14 +137,11 @@ function stop(dostop) {
         clearInterval(scanTimer);
     scanTimer = null;
     _W('Adapter disconnected and stopped');
-    //    if (dostop)
-    //        process.exit();
-    //        adapter.stop();
 }
 
 adapter.on('message', obj => processMessage(obj));
 
-adapter.on('ready', () => main());
+adapter.on('ready', () => main(makePs()));
 
 adapter.on('unload', () => stop(false));
 
@@ -169,8 +172,8 @@ const objects = new Map();
 function makeState(id, value, ack) {
     let a = ack ? true : false;
     if (objects.has(id))
-        return PsetState(id, value, a);
-    _D(`Make State ${id} and set value to '${_O(value)} ack: ${ack}'`) ///TC
+        return P.setState(id, value, a);
+//    _D(`Make State ${id} and set value to:${_O(value)} ack:${ack}`) ///TC
     var st = {
         common: {
             name: id, // You can add here some description
@@ -185,12 +188,10 @@ function makeState(id, value, ack) {
     };
     if (id.endsWith('Percent'))
         st.common.unit = "%";
-    return PextendObject(id, st)
-        .then(x => {
-            objects.set(id, x);
-            return PsetState(id, value, a);
-        })
-        .catch(err => _D(`MS ${_O(err)}:=extend`, id));
+    return P.extendObject(id, st,null)
+        .then(x => objects.set(id, x))
+        .then(() => P.setState(id, value, a))
+        .catch(err => _D(`MS ${_O(err)}`, id));
 
 }
 
@@ -241,20 +242,20 @@ function pGet(url, retry) {
 
 function BMWrequest(_host, _path, _postData) {
     return new Promise((_res, _rej) => {
-        var hasToken = typeof (token.token) === "string" && token.token.length > 0;
+//        var hasToken = typeof (token.token) === "string" && token.token.length > 0;
 
         var options = {
             hostname: _host,
             port: '443',
             path: _path,
-            method: hasToken ? 'GET' : 'POST',
+            method: !_postData ? 'GET' : 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': Buffer.byteLength(_postData)
+//                'Content-Length': Buffer.byteLength(_postData)
             }
         };
 
-        if (hasToken) {
+        if ( typeof (token.token) === "string" && token.token.length > 0) {
             options.headers.Authorization = token.tokenType + " " + token.token;
         }
 
@@ -276,7 +277,8 @@ function BMWrequest(_host, _path, _postData) {
             _rej(e);
         });
 
-        req.write(_postData);
+        if (!!_postData) 
+            req.write(_postData);
         req.end();
     });
 }
@@ -368,7 +370,7 @@ function requestVehicle(_rootData) {
     var carData = _rootData;
 
     function requestVehicleData(_type) {
-        return BMWrequest(g_api_host, '/api/vehicle/' + _type + '/v1/' + carData.vin, '')
+        return BMWrequest(g_api_host, '/api/vehicle/' + _type + '/v1/' + carData.vin)
             .then(res => carData[_type.split('/').slice(-1)[0]] = JSON.parse(res.data));
     }
 
@@ -388,7 +390,7 @@ function requestVehicle(_rootData) {
 }
 
 function requestVehicles() {
-    return BMWrequest(g_api_host, '/api/me/vehicles/v2', '')
+    return BMWrequest(g_api_host, '/api/me/vehicles/v2')
         //        .then(res => pSeries(JSON.parse(res.data), veh => requestVehicle(veh)))
         .then(res => Promise.all(JSON.parse(res.data).map(requestVehicle)))
         .catch(e => _W(`RequestVehicles Error ${e}`));
@@ -509,7 +511,7 @@ function main() {
                 return Promise.resolve(item.id);
             }, 20);
         })
-        .then(() => PgetObjectList({ include_docs: true }))
+        .then(() => P.getObjectList({ include_docs: true }))
         .then(res => {
             var r = {};
             res.rows.map(i => r[i.doc._id] = i.doc)
@@ -528,23 +530,23 @@ function main() {
             //                setInterval(scanExtIP, parseInt(adapter.config.external) * 1000);
             //            return scanAll(); // scan first time and generate states if they do not exist yet
         })
-        .then(res => PgetObjectList({ startkey: ain, endkey: ain + '\u9999' }))
+        .then(() => BMWinitialize())
+        .then(x => _D(`Initialized ${_O(token)}`))
+//        .then(() => requestVehicles())
+//        .then(x => _D(`Found vehicles: ${_O(vehicles,7)}`))
+        .then(() => getCars())
+        .then(res => P.getObjectList({ startkey: ain, endkey: ain + '\u9999' }))
         .then(res => pSeriesP(res.rows, item => {  // clean all states which are not part of the list
             //            _I(`Check ${_O(item)}`);
             let id = item.id.slice(ain.length);
             if (objects.has(id))
                 return Promise.resolve();
             //            _I(`Delete ${_O(item)}`);
-            return PdeleteState(id)
+            return P.deleteState(id)
                 .then(x => _D(`Del State: ${id}`), err => _D(`Del State err: ${_O(err)}`)) ///TC
-                .then(y => PdelObject(id))
+                .then(y => P.delObject(id))
                 .then(x => _D(`Del Object: ${id}`), err => _D(`Del Object err: ${_O(err)}`)) ///TC
         }, 10))
-        .then(() => BMWinitialize())
-        .then(x => _D(`Initialized ${_O(token)}`))
-//        .then(() => requestVehicles())
-//        .then(x => _D(`Found vehicles: ${_O(vehicles,7)}`))
-        .then(() => getCars())
     
         .catch(err => {
             _W(`bmw initialization finished with error ${_O(err)}, will stop adapter!`);
