@@ -10,42 +10,40 @@ Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjo
 
 ==============
 
-# ioBroker bmw Adapter Zum Auslesen von ConnectedDrive-Daten
-BlaBla---
+# ioBroker bmw Adapter zum Auslesen von ConnectedDrive-Daten
+Der Adapter versucht die ConnectedDrive-Daten für die auf die angegebenen Benutzer registrierten Fahrzeuge. 
+Man kann filtern welche Daten angezeigt werden indem man im Admin die Einstellungen für
+* zu verwendete services (ich verwende nur: efficiency, dynamic, navigation)
+* zu löschende Einträge (Bei mir Daten wie: modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages)
+* Einträge die von Arrays umgewandelt werden sollen (bei mir: lastTripList|name|lastTrip|unit, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity)
+* Einträge die in ihrer Hirarchie nach oben wandern sollen (bei mir attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList)
+* der zu verwendete Datenserver kann auch angegeben werden, der Default ist für den Rest der Welt, wer in anderen Regionen wohnt kann auch https://b2vapi.bmwgroup.cn:8592 für China, https://b2vapi.bmwgroup.us für USA und https://b2vapi.bmwgroup.com für Europe / Rest of World probieren. www.bmw-connecteddrive.com wird auf den letzten weitergeleitet.
+
+
 
 ## Important/Wichtig
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
 ### 0.2.0
-* First public release, working fine on Raspberry
-
-### 0.1.0
-* Ok, my first working version on Raspberry!
+* First public release, working fine for my car!
 
 ## Install
 
 Installieren über ioBroker.admin
 
-On Linux install `fping` and `arp-scan` (with me it worked like `sudo apt-get install fping arp-scan`)
-
-if `fping` is available the tool will use ping and fping to check on IP availabilit. 
-if `arp-scan` is available it will use it to scan mac addresses.
-
-Also make sure that `hcitool` is installed, normally part of `bluez`.
-
 ## Configuration
 
-Jedes Gerät bekommt einen Namen und es wird entweder wird als Ausgang oder Eingang definiert ('output' oder 'input'  bzw 'o' oder 'i' ins Feld schreiben).
-Beginnt der Name des Geätes mit `HP-` dann nimmt bmw an es handelt sich um einen HP-Drucker und es versucht auch (alle 500 scan-Versuche) den Tintenstand auszulesen!
+Der Benutzername, das Passwort und die Datenfilter müssen in Adapter config eingegeben werden.
 
-Wenn ein Gerätename mit `-` endet (z.B. `Internet-`) dann wird er nicht in whoHere/countHere gelistet. Damit können Geräte oder andere Devices vom Anwesenheitscheck ausgeklammert werden.
-
-### Todo
+### Todo for later revisions
+* Sprachunterstützung/übersetzung
+* Unterstützung der Units
+* Aktionen (Türen schließen, Klima anstellen, Abfahrt einstellen) durchführen
 
 ## Installation
-Auf Linux sollte das tool 'fping' und arp-scan (z.B. mit `sudo apt-get install fping arp-scan`) installiert werden welches zusätzlich zum normalen ping verwendet wird.
-Auf Windows sollte das bin.zip nach node_modules\iobroker.bmw extrahiert werden da eventuell node_modules\iobroker.bmw\bin\bluetoothview\BluetoothView.exe von npm nicht installiert wird.
+
+Mit admin, iobroker oder von https://github.com/frankjoke/iobroker.bmw oder mit npm install iobroker.bmw
 
 ## License
 

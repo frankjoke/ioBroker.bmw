@@ -18,6 +18,7 @@ const http = require('http');
 const https = require('https');
 const exec = require('child_process').exec;
 const querystring = require('querystring');
+const assert = require('assert');
 
 function _O(obj, level) { return util.inspect(obj, false, level || 2, false).replace(/\n/g, ' '); }
 
@@ -27,109 +28,129 @@ function _N(fun) { return setTimeout.apply(null, [fun, 0].concat(Array.prototype
 function _D(str, val) { adapter.log.info(`<span style="color:darkblue;">debug: ${str}</span>`); return val !== undefined ? val : str; } // Write debug message in log, optionally return 2nd argument
 function _I(l, v) { adapter.log.info(l); return v === undefined ? l : v; }
 function _W(l, v) { adapter.log.warn(l); return v === undefined ? l : v; }
-function _T(i) {var t=typeof i; if(t==='object'){
-    if(Array.isArray(i)) t = 'array'; 
-    else if(i instanceof RegExp) t = 'regexp'; 
-    else if(i===null) t = 'null'; } 
-    else if(t==='number' && isNaN(i)) t='NaN'; 
+function _T(i) {
+    var t = typeof i; if (t === 'object') {
+        if (Array.isArray(i)) t = 'array';
+        else if (i instanceof RegExp) t = 'regexp';
+        else if (i === null) t = 'null';
+    } else if (t === 'number' && isNaN(i)) t = 'NaN';
     return t;
 }
 
-function wait(time, arg) { return new Promise(res => setTimeout(res, time, arg)) }
+const P = {
+    res: (what) => Promise.resolve(what),
+    rej: (what) => Promise.reject(what),
+    wait: (time, arg) => new Promise(res => setTimeout(res, time, arg)),
 
-function pSeriesP(obj, promfn, delay) { // fun gets(item) and returns a promise
-    delay = delay || 0;
-    let p = Promise.resolve();
-    const nv = [],
-        f = (k) => p = p.then(() => promfn(k).then(res => wait(delay, nv.push(res))));
-    for (let item of obj)
-        f(item);
-    return p.then(() => nv);
-}
-/*
-function pSeriesInP(obj,promfn,delay) { // fun gets(key,obj) and returns a promise
-    delay = delay || 0;
-    let p = Promise.resolve();
-    const   nv = [],
-            f = (k) => p = p.then(() => promfn(k,obj).then(res => wait(delay,nv.push(res))));
-    for(let item in obj) 
-        f(item);
-    return p.then(() => nv);
-}
+    series: (obj, promfn, delay) =>  { // fun gets(item) and returns a promise
+        assert(typeof promfn === 'function', 'series(obj,promfn,delay) error: promfn is not a function!');
+        delay = delay || 0;
+        let p = Promise.resolve();
+        const nv = [],
+            f = (k) => p = p.then(() => promfn(k).then(res => P.wait(delay, nv.push(res))));
+        for (let item of obj)
+            f(item);
+        return p.then(() => nv);
+    },
 
-function pSeriesF(obj,fun,delay) { // fun gets(item) and returns a value
-    delay = delay || 0;
-    let p = Promise.resolve();
-    const   nv = [],
-            f = (k) => p = p.then(() => Promise.resolve(fun(k)).then(res => wait(delay,nv.push(res))));
-    for(let item of obj) 
-        f(item);
-    return p.then(() => nv);
-}
-*/
-function c2pP(f) {
-    if (!f)
-        throw new Error(`f = null in c2pP definition!`);
-//    _D(`c2pP: ${_O(f)}`);
-    return function () {
-        const args = Array.prototype.slice.call(arguments);
-        return new Promise((res, rej) => {
-            args.push((err, result) => (err && _N(rej, err)) || _N(res, result));
-            f.apply(this, args);
+    c2p: (f) => {
+        assert(typeof f === 'function', 'c2p (f) error: f is not a function!');
+        if (!f)
+            throw new Error(`f = null in c2pP definition!`);
+        return function() {
+            const args = Array.prototype.slice.call(arguments);
+            return new Promise((res, rej) => {
+                args.push((err, result) => (err && _N(rej, err)) || _N(res, result));
+                f.apply(this, args);
+            });
+        }
+    },
+
+    c1p: (f) => {
+        assert(typeof f === 'function', 'c1p (f) error: f is not a function!');
+        return  function() {
+            const args = Array.prototype.slice.call(arguments);
+            return new Promise((res, rej) => {
+                args.push((result) => _N(res, result));
+                f.apply(this, args);
+            });
+        };
+    },
+
+    retry: (nretry, fn, arg) => {
+        return fn(arg).catch(err => { 
+            if (nretry <= 0) 
+                throw err;
+            return P.retry(nretry - 1, fn,arg); 
         });
-    };
-}
-
-function c1pP(f) {
-    return function () {
-        const args = Array.prototype.slice.call(arguments);
-        return new Promise((res, rej) => {
-            args.push((result) => _N(res, result));
-            f.apply(this, args);
+    },
+    
+    repeat: (nretry, fn, arg) => {
+        return fn(arg).then(() => Promise.reject()).catch(err => { 
+            if (nretry <= 0)
+                return Promise.resolve();
+            return P.repeat(nretry - 1, fn,arg); 
         });
-    };
-}
-/*
-function pRetryP(nretry, fn, arg) {
-    return fn(arg).catch(err => { 
-        if (nretry <= 0) 
-            throw err;
-        return pRetryP(nretry - 1, fn,arg); 
-    });
-}
+    },
 
-function pRepeatP(nretry, fn, arg) {
-    return fn(arg).then(() => Promise.reject()).catch(err => { 
-        if (nretry <= 0)
-            return Promise.resolve();
-        return pRepeatP(nretry - 1, fn,arg); 
-    });
-}
+    exec: (command) => {
+        const istest = command.startsWith('!');
+        return new Promise((resolve, reject) => {
+            exec(istest ? command.slice(1) : command, (error, stdout, stderr) => {
+                if (istest && error) {
+                    error[stderr] = stderr;
+                    return reject(error);
+                }
+                resolve(stdout);
+            });
+        });
+    },
 
-*/
+    get: (url,retry) => {     // get a web page either with http or https and return a promise for the data, could be done also with request but request is now an external package and http/https are part of nodejs.
+        const fun = typeof url === 'string' && url.trim().toLowerCase().startsWith('https') ||
+            url.protocol == 'https' ? https.get : http.get;
+        return (new Promise((resolve,reject)=> {
+            fun(url, (res) => {
+                const statusCode = res.statusCode;
+                const contentType = res.headers['content-type'];
+                if (statusCode !== 200) {
+                    const error = new Error(`Request Failed. Status Code: ${statusCode}`);
+                    res.resume();                 // consume response data to free up memory
+                    return reject(error);
+                }
+                res.setEncoding('utf8');
+                var rawData = '';
+                res.on('data', (chunk) => rawData += chunk);
+                res.on('end', () => resolve(rawData));
+            }).on('error', (e) => reject(e));
+        })).catch(err => {
+            if (!retry) reject(err);
+            return P.wait(100,retry -1).then(a => P.get(url,a));
+        });
+    },
 
-const P = {};
-
-function makePs() {
-    P.getObjectList = c2pP(adapter.objects.getObjectList),
-    P.getForeignObject = c2pP(adapter.getForeignObject),
-    P.setForeignObject = c2pP(adapter.setForeignObject),
-    P.getForeignObjects = c2pP(adapter.getForeignObjects),
-    P.getForeignState = c2pP(adapter.getForeignState),
-    P.getState = c2pP(adapter.getState),
-    P.setState = c2pP(adapter.setState),
-    P.getObject = c2pP(adapter.getObject),
-    P.deleteState = c2pP(adapter.deleteState),
-    P.delObject = c2pP(adapter.delObject),
-    P.setObject = c2pP(adapter.setObject),
-    P.createState = c2pP(adapter.createState),
-    P.extendObject = c2pP(adapter.extendObject);
+    initAdapter: () => {
+        P.getObjectList = P.c2p(adapter.objects.getObjectList),
+            P.getForeignObject = P.c2p(adapter.getForeignObject),
+            P.setForeignObject = P.c2p(adapter.setForeignObject),
+            P.getForeignObjects = P.c2p(adapter.getForeignObjects),
+            P.getForeignState = P.c2p(adapter.getForeignState),
+            P.getState = P.c2p(adapter.getState),
+            P.setState = P.c2p(adapter.setState),
+            P.getObject = P.c2p(adapter.getObject),
+            P.deleteState = P.c2p(adapter.deleteState),
+            P.delObject = P.c2p(adapter.delObject),
+            P.setObject = P.c2p(adapter.setObject),
+            P.createState = P.c2p(adapter.createState),
+            P.extendObject = P.c2p(adapter.extendObject);
+    }
+    
 }
 
 var isStopping = false;
 const scanList = new Map();
-var scanDelay = 300 * 1000, // in ms = 5 min
-    scanTimer = null; 
+var scanDelay = 5 * 60 * 1000, // in ms = 5 min
+    scanTimer = null;
 
 function stop(dostop) {
     isStopping = true;
@@ -141,7 +162,7 @@ function stop(dostop) {
 
 adapter.on('message', obj => processMessage(obj));
 
-adapter.on('ready', () => main(makePs()));
+adapter.on('ready', () => main(P.initAdapter()));
 
 adapter.on('unload', () => stop(false));
 
@@ -169,11 +190,17 @@ function processMessage(obj) {
 
 const objects = new Map();
 
-function makeState(id, value, ack) {
-    let a = ack ? true : false;
+function makeState(ido, value, ack) {
+    ack = ack === undefined || !!ack;
+    let id = ido;
+    if (typeof id === 'string')
+        ido = {};
+    else if (typeof id.id === 'string') {
+        id = id.id;
+    } else return Promise.reject(_W(`Invalid makeState id: ${_O(id)}`));
     if (objects.has(id))
-        return P.setState(id, value, a);
-//    _D(`Make State ${id} and set value to:${_O(value)} ack:${ack}`) ///TC
+        return P.setState(id, value, ack);
+    //    _D(`Make State ${id} and set value to:${_O(value)} ack:${ack}`) ///TC
     var st = {
         common: {
             name: id, // You can add here some description
@@ -186,63 +213,22 @@ function makeState(id, value, ack) {
         type: 'state',
         _id: id
     };
+
+    for (let i in ido)
+        if (i != 'id' && i != 'val')
+            st.common[i] = ido[i];
     if (id.endsWith('Percent'))
         st.common.unit = "%";
-    return P.extendObject(id, st,null)
+    return P.extendObject(id, st, null)
         .then(x => objects.set(id, x))
-        .then(() => P.setState(id, value, a))
+        .then(() => P.setState(id, value, ack))
         .catch(err => _D(`MS ${_O(err)}`, id));
 
 }
 
-/*
-function pExec(command) {
-    const istest = command.startsWith('!');
-    return new Promise((resolve, reject) => {
-        exec(istest ? command.slice(1) : command, (error, stdout, stderr) => {
-            if (istest && error) {
-                error[stderr] = stderr;
-                return reject(error);
-            }
-            resolve(stdout);
-        });
-    });
-}
-
-function pGet(url, retry) {
-    //    _I(`pGet retry(${retry}): ${url}`);
-    return (new Promise((resolve, reject) => {
-        //        _I(`pGet retry(${retry}): ${url}`);
-        http.get(url, (res) => {
-            let statusCode = res.statusCode;
-            let contentType = res.headers['content-type'];
-            //            _D(`res: ${statusCode}, ${contentType}`);
-            let error = null;
-            if (statusCode !== 200) {
-                error = new Error(`Request Failed. Status Code: ${statusCode}`);
-                //              } else if (!/^application\/json/.test(contentType)) {
-                //                error = new Error(`Invalid content-type. Expected application/json but received ${contentType}`);
-            }
-            if (error) {
-                res.resume();                 // consume response data to free up memory
-                return reject(error);
-            }
-
-            res.setEncoding('utf8');
-            let rawData = '';
-            res.on('data', (chunk) => rawData += chunk);
-            res.on('end', () => _N(resolve, rawData));
-        }).on('error', (e) => _N(reject, e));
-    })).catch(err => {
-        if (!(retry > 0)) throw err;
-        return wait(100, retry - 1).then(a => pGet(url, a));
-    });
-}
-*/
-
 function BMWrequest(_host, _path, _postData) {
     return new Promise((_res, _rej) => {
-//        var hasToken = typeof (token.token) === "string" && token.token.length > 0;
+        //        var hasToken = typeof (token.token) === "string" && token.token.length > 0;
 
         var options = {
             hostname: _host,
@@ -251,11 +237,11 @@ function BMWrequest(_host, _path, _postData) {
             method: !_postData ? 'GET' : 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-//                'Content-Length': Buffer.byteLength(_postData)
+                //                'Content-Length': Buffer.byteLength(_postData)
             }
         };
 
-        if ( typeof (token.token) === "string" && token.token.length > 0) {
+        if (typeof (token.token) === "string" && token.token.length > 0) {
             options.headers.Authorization = token.tokenType + " " + token.token;
         }
 
@@ -277,7 +263,7 @@ function BMWrequest(_host, _path, _postData) {
             _rej(e);
         });
 
-        if (!!_postData) 
+        if (!!_postData)
             req.write(_postData);
         req.end();
     });
@@ -309,7 +295,7 @@ function requestToken() {
         'locale': 'DE-de'
     });
 
-    return BMWrequest('customer.bmwgroup.com', '/gcdm/oauth/authenticate', _D(postData,postData))
+    return BMWrequest('customer.bmwgroup.com', '/gcdm/oauth/authenticate', postData)
         .then(res => {
             var location = res.headers.location;
 
@@ -371,7 +357,8 @@ function requestVehicle(_rootData) {
 
     function requestVehicleData(_type) {
         return BMWrequest(g_api_host, '/api/vehicle/' + _type + '/v1/' + carData.vin)
-            .then(res => carData[_type.split('/').slice(-1)[0]] = JSON.parse(res.data));
+            .then(res => JSON.parse(res.data))
+            .then(res => res.error ? res.error_description : (carData[_type.split('/').slice(-1)[0]] = _D(_O(res), res)));
     }
 
     /*
@@ -384,8 +371,8 @@ function requestVehicle(_rootData) {
     https://www.bmw-connecteddrive.de/api/vehicle/servicepartner/v1/vin
     */
     return Promise.all(adapter.config.services.split(',').map(x => x.trim()).map(requestVehicleData, this))
-        .then(() => vehicles[carData.vin] = carData)
         .then(() => convert(carData))
+        .then(car => vehicles[carData.vin] = car)
         .catch(e => _W(`RequestVehicleData Error ${e}`));
 }
 
@@ -397,74 +384,51 @@ function requestVehicles() {
 }
 
 function convert(car) {
-    const corr = {
-        specs: { name: 'key', value: 'value' },
-        service: { name: 'name', value: 'services' },
-        'service.cdpFeatures': { name: 'name', value: 'status' },
-        'dynamic.vehicleMessages.cbsMessages': { name: 'text', value: 'date' },
-        'efficiency.lastTripList': { name: 'name', value: 'lastTrip', flatten: true },
-        'efficiency.lifeTimeList': { name: 'name', value: 'lifeTime', flatten: true },
-        'efficiency.characteristicList': { name: 'characteristic', value: 'quantity', flatten: true },
-        'efficiency.modelType': 'remove',
-        series: 'remove',
-        basicType: 'remove',
-        brand: 'remove',
-        licensePlate: 'remove',
-        hasNavi: 'remove',
-        bodyType: 'remove',
-        dcOnly: 'remove',
-        hasSunRoof: 'remove',
-        hasRex: 'remove',
-        steering: 'remove',
-        driveTrain: 'remove',
-        doorCount: 'remove',
-        'navigation.vehicleTracking': 'remove',
-        'navigation.isoCountryCode': 'remove',
-        'navigation.auxPowerRegular': 'remove',
-        'navigation.auxPowerEcoPro': 'remove',
-        'navigation.auxPowerEcoProPlus': 'remove',
-        'dynamic.attributesMap': 'flatten',
-        'dynamic.vehicleMessages': 'flatten',
-        'dynamic.cbsMessages': 'flatten',
-        'chargingprofile.twoTimeTimer': 'flatten',
-        'dynamic.ccmMessages': 'remove',
-    };
-    for (let i in corr) {
-        const chg = corr[i];
-        const dat = i.split('.');
-        var e = car;
-        var l = car;
-        var ll = null;
-        for (let j of dat) {
-            l = e;
-            ll = j;
-            e = e[j];
-            if (e === undefined) {
-                l = null;
-                break;
+    var list = {},
+        arrs = {},
+        dell = adapter.config.delete.split(',').map(s => s.trim()),
+        flat = adapter.config.flatten.split(',').map(s => s.trim()),
+        arrl = adapter.config.arrays.split(',').map(s => {
+            var l = s.split('|').map(s => s.trim());
+            arrs[l[0]] = l.slice(1);
+        });
+
+    function convObj(obj, namelist, last) {
+        if (_T(obj) == 'array') {
+            if (obj.length > 0 && _T(obj[0]) != 'object')
+                obj = obj.join(', ');
+            else {
+                //                _D(`${last}: ${arrs[last]} = ${_O(obj)}`);
+                if (arrs[last]) {
+                    let m = arrs[last]
+                    for (let j of obj) {
+                        let n = j[m[0]];
+                        if (!dell.includes(n))
+                            convObj(j[m[1]], flat.includes(n) ? namelist : ((namelist != '' ? namelist + '.' : '') + n), n)
+                    }
+                    return;
+                }
             }
         }
-        if (l && chg == 'flatten') {
-            for (let n in e)
-                l[n] = e[n];
-            delete l[ll];
-        } else if (l && chg == 'remove') {
-            delete l[ll];
-        } else if (l && Array.isArray(e) && chg.name) {
-            _D(`will try to convert ${i} in ${car.vin}`);
-            var n = {};
-            for (let k of e) {
-                if (k[chg.name])
-                    n[k[chg.name]] = k[chg.value];
-            }
-            l[ll] = n;
-            if (chg.flatten) {
-                for (let m in n)
-                    l[m] = n[m];
-                delete l[ll];
-            }
-        }
+        if (_T(obj) != 'object' && _T(obj) != 'array')
+            return list[namelist] = obj;
+        else if (_T(obj) == 'object')
+            for (let i in obj)
+                if (!dell.includes(i))
+                    convObj(obj[i], flat.includes(i) ? namelist : ((namelist != '' ? namelist + '.' : '') + i), i)
     }
+    return (car.navigation && car.navigation.latitude && car.navigation.longitude ? 
+        P.get(`http://maps.googleapis.com/maps/api/geocode/json?latlng=${car.navigation.latitude},${car.navigation.longitude}&sensor=true`)
+        : P.res({results: [{formatted_address:'N/A'}]}))
+        .then(res => {
+            res = JSON.parse(res);
+            if (car.navigation && res && res.results && res.results[0] && res.results[0].formatted_address)
+                car.navigation.formatted_address = res.results[0].formatted_address;
+            _D(`Added car location ${car.navigation.formatted_address}`);
+            return null;
+        }).then(() => (convObj(car, ''),list))
+        .catch(err => _W(`Error in covert car data: ${err}`,list))
+        ;
 }
 
 var ain = '',
@@ -473,81 +437,63 @@ var ain = '',
     host = null,
     dataList = {};
 
-function printCars(car, before) {
-    let b = before ? before : '';
-    if (_T(car) == 'object') {
-        for (let i in car) {
-            printCars(car[i],b== '' ? i : b + '.' + i);
-        }
-    } else 
-        dataList[before] = _D(`${before}: ${car}`,car);
-}
 
 function getCars() {
     dataList = {};
     return requestVehicles()
-        .then(() => printCars(vehicles))
-        .then(() => pSeriesP(Object.keys(dataList), id => makeState(_D(`${id}: ${dataList[id]}`,id),dataList[id],true),1))
-        ;    
+        //        .then(() => _D(_O(vehicles,7)))
+        .then(() => P.series(Object.keys(vehicles), car => P.series(Object.keys(vehicles[car]), id => makeState(_D(`${id}: ${vehicles[car][id]}`, id), vehicles[car][id], true), 1)))
+        ;
 }
 
 function main() {
     host = adapter.host;
     ain = adapter.name + '.' + adapter.instance + '.';
 
-    if (!adapter.config.scandelay || parseInt(adapter.config.scandelay) < 300)
-        adapter.config.scandelay = 300;
-    scanDelay = adapter.config.scandelay * 1000;
+    if (!adapter.config.scandelay || parseInt(adapter.config.scandelay) < 5)
+        _W(`Adapter scan delay was ${adapter.config.scandelay} set to 5 min!`,adapter.config.scandelay = 5);
+    scanDelay = parseInt(adapter.config.scandelay) * 60* 1000; // minutes
 
     if (adapter.config.server)
         g_api_host = adapter.config.server;
 
-    _I(`bmw set to scan every ${adapter.config.scandelay} sec.`);
+    _I(`BMW set to scan data on ConnectedDrive every ${adapter.config.scandelay} minutes.`);
 
-    wait(100)
-        .then(res => {
-            return pSeriesP(adapter.config.devices, item => {
-                _D(`checking item ${_O(item)}`);
-                return Promise.resolve(item.id);
-            }, 20);
-        })
-        .then(() => P.getObjectList({ include_docs: true }))
-        .then(res => {
-            var r = {};
-            res.rows.map(i => r[i.doc._id] = i.doc)
-            if (r['system.config'] && r['system.config'].common.language)
-                lang = r['system.config'].common.language;
-            if (r['system.config'] && r['system.config'].common.latitude) {
-                adapter.config.latitude = parseFloat(r['system.config'].common.latitude);
-                adapter.config.longitude = parseFloat(r['system.config'].common.longitude);
-            } else return Promise.reject(_W('No geo location data found configured in admin to calculate UWZ AREA ID!'));
-        })
-        .then(x => x, err =>  null)
-        .then(res => {
-            _I(`bmw adapter initialized ${scanList.size} devices, ExternalNetwork = ${adapter.config.external}.`);
-            //            scanTimer = setInterval(scanAll, scanDelay);
-            //            if (parseInt(adapter.config.external) > 0)
-            //                setInterval(scanExtIP, parseInt(adapter.config.external) * 1000);
-            //            return scanAll(); // scan first time and generate states if they do not exist yet
-        })
+    P.wait(100)
         .then(() => BMWinitialize())
-        .then(x => _D(`Initialized ${_O(token)}`))
-//        .then(() => requestVehicles())
-//        .then(x => _D(`Found vehicles: ${_O(vehicles,7)}`))
-        .then(() => getCars())
+        .then(x => _D(`Initialized, client_id= ${_O(token)}`))
+        /*        .then(() => P.getObjectList({ include_docs: true }))
+                .then(res => {
+                    var r = {};
+                    res.rows.map(i => r[i.doc._id] = i.doc)
+                    if (r['system.config'] && r['system.config'].common.language)
+                        lang = r['system.config'].common.language;
+                    if (r['system.config'] && r['system.config'].common.latitude) {
+                        adapter.config.latitude = parseFloat(r['system.config'].common.latitude);
+                        adapter.config.longitude = parseFloat(r['system.config'].common.longitude);
+                    } else return Promise.reject(_W('No geo location data found configured in admin to calculate UWZ AREA ID!'));
+                }) 
+                .then(x => x, err => null)
+                //        .then(() => requestVehicles())
+                //        .then(x => _D(`Found vehicles: ${_O(vehicles,7)}`))
+        */
+        .then(res => {
+            scanTimer = setInterval(getCars, scanDelay);
+            return getCars(); // scan first time and generate states if they do not exist yet
+        })
         .then(res => P.getObjectList({ startkey: ain, endkey: ain + '\u9999' }))
-        .then(res => pSeriesP(res.rows, item => {  // clean all states which are not part of the list
+        .then(res => P.series(res.rows, item => {  // clean all states which are not part of the list
             //            _I(`Check ${_O(item)}`);
             let id = item.id.slice(ain.length);
             if (objects.has(id))
-                return Promise.resolve();
+                return P.res();
             //            _I(`Delete ${_O(item)}`);
             return P.deleteState(id)
                 .then(x => _D(`Del State: ${id}`), err => _D(`Del State err: ${_O(err)}`)) ///TC
                 .then(y => P.delObject(id))
                 .then(x => _D(`Del Object: ${id}`), err => _D(`Del Object err: ${_O(err)}`)) ///TC
         }, 10))
-    
+
         .catch(err => {
             _W(`bmw initialization finished with error ${_O(err)}, will stop adapter!`);
             stop(true);

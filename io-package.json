@@ -26,19 +26,14 @@
         "type": "hardware"
     },
     "native": {
-        "devices": [
-            {
-                "name": "Ich",
-                "ip": "localhost",
-                "macs": "",
-                "bluetooth": ""
-            }
-        ],
         "scandelay": 60,
-        "server": "www.bmw-connecteddrive.de",
+        "server": "www.bmw-connecteddrive.com",
         "email": "email/usename",
         "password": "password",
-        "services": "efficiency, dynamic, navigation, remoteservices/chargingprofile, servicepartner, service, specs"
-    },
+        "services": "efficiency, dynamic, navigation, remoteservices/chargingprofile, servicepartner, service, specs",
+        "delete": "modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages",
+        "flatten": "attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList",
+        "arrays": "lastTripList|name|lastTrip|unit, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity"
+   },
     "objects": []
 }

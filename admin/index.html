@@ -29,9 +29,11 @@
     systemDictionary = {
         "bmw adapter settings": {"en": "bmw adapter settings", "de": "BMW Adapter-Einstellungen"},
         "bmw settings":         {"en": "bmw settings",         "de": "BMW-Einstellungen"},
-        "Device setup":        {"en": "individual device setup",  "de": "Individuelle Suchobjekt-Einstellungen"},
         "Services:":        {"en": "services you want to receive from ConnectedDrive: ",  "de": "Services die ConnectedDrive abfragen soll: "},
-        "Scan Delay:":   {"en": "Delay in seconds between scans (>=300): ", "de": "Verzögerung in Sekunden zwischen Abfragen (>=300): "},
+        "Arrays:":        {"en": "arrays which need to be converted to objects: ",  "de": "Arrays die in Objekte konvertiert werden müssen (object|name|wert|unit durch ',' getrennt): "},
+        "Delete:":        {"en": "items names you want to remove and not show in ioBroker: ",  "de": "Objekte/namen die nicht übertragen werden sollen: "},
+        "Flatten:":        {"en": "objects which should move to upper hirarchy: ",  "de": "Objekte/namen die in übergeordnete Hirarchie wandern sollen: "},
+        "Scan Delay:":   {"en": "Delay in minutes between scans (>=5): ", "de": "Verzögerung in Minuten zwischen Abfragen (>=5): "},
         "Server:":   {"en": "ConnectedDrive server, in Europe 'www.bmw-connecteddrive.de': ",     
                 "de": "ConnectedDrive Server, in Europa 'www.bmw-connecteddrive.de': "},
         "Email:":   {"en": "email as username used for connected drive: ",     
@@ -75,14 +77,10 @@
     // the function loadSettings has to exist ...
     function load(settings, onChange) {
         if (!settings) return;
-
         devices = settings.devices || [];
-
         for (var key in settings) {
             setValue(key, settings[key], onChange);
         }
-
-        editTable('devices', ['name', 'ip','macs', 'bluetooth'], devices, 350);
         onChange(false);
     }
 
@@ -100,9 +98,6 @@
             }
         });
 
-        // Get edited table
-        obj.devices = getTableResult('devices', ['name', 'ip', 'macs', 'bluetooth']);
-
         callback(obj);
     }
 </script>
@@ -114,21 +109,15 @@
         <td><img src="bmw.png" width="64" height="64"></td>
         <td style="padding-top: 20px;padding-left: 10px"><h3 class="translate">bmw adapter settings</h3></td>
     </tr></table>
-
-    <h4 class="translate">bmw settings</h4>
     <table>
         <tr><td class="translate">Scan Delay:</td><td><input class="value number" id="scandelay" type="input" size="5"/></td></tr>
         <tr><td class="translate">Email:</td><td><input class="value string" id="email" type="input" size="30"/></td></tr>
-        <tr><td class="translate">Password:</td><td><input class="value password" id="password" type="input" size="30"/></td></tr>
+        <tr><td class="translate">Password:</td><td><input class="value string" id="password" type="password" size="30"/></td></tr>
         <tr><td class="translate">Server:</td><td><input class="value string" id="server" type="input" size="30"/></td></tr>
     </table>
-    <p>
-        <span class="translate">Services:</span> <textarea class="value" id="services" style="width:90%;height:50px"></textarea><br>
-    </p>
-
-    <h4 class="translate">Device setup</h4>
-    <table id="devices"></table><div id="pager-devices"></div>
-    <p class="translate">description</p>
-
+    <p><span class="translate">Services:</span> <textarea class="value" id="services" style="width:90%;height:30px"></textarea><br></p>
+    <p><span class="translate">Delete:</span><textarea class="value" id="delete" style="width:90%;height:60px"></textarea><br></p>
+    <p><span class="translate">Flatten:</span><textarea class="value" id="flatten" style="width:90%;height:40px"></textarea><br></p>
+    <p><span class="translate">Arrays:</span><textarea class="value" id="arrays" style="width:90%;height:40px"></textarea><br></p>
 </div>
 </html>
