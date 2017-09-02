@@ -27,6 +27,7 @@ Wenn der Adapter die Position vom Navigationssystem auslesen kann übersetz er d
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
+### 0.2.1
 * Small changes to the text and description as well as for npm
 
 ### 0.2.0
