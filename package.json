@@ -1,7 +1,7 @@
 {
   "name": "iobroker.bmw",
-  "description": "bmw adapter for IP and Bluetooth, it also can scan HP printers ink and ECB currency to EUR",
-  "version": "0.2.0",
+  "description": "ioBroker adapter to read BMW ConnectedDrive data",
+  "version": "0.2.1",
   "author": "frankjoke <frankjoke@hotmail.com>",
   "contributors": [
     "frankjoke <frankjoke@hotmail.com>"
@@ -10,7 +10,8 @@
   "license": "MIT",
   "keywords": [
     "iobroker",
-    "BMW"
+    "BMW",
+    "ConnectedDrive"
   ],
   "repository": {
     "type": "git",

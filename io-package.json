@@ -1,7 +1,7 @@
 {
     "common": {
         "name": "bmw",
-        "version": "0.2.0",
+        "version": "0.2.1",
         "title": "BMW ConnectedDrive data",
         "desc": {
             "en": "Queries BMW ConnectedDrive data for registered cars in your BMW account",

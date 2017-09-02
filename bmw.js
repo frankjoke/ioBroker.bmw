@@ -451,7 +451,7 @@ function main() {
     ain = adapter.name + '.' + adapter.instance + '.';
 
     if (!adapter.config.scandelay || parseInt(adapter.config.scandelay) < 5)
-        _W(`Adapter scan delay was ${adapter.config.scandelay} set to 5 min!`,adapter.config.scandelay = 5);
+        _W(`BMW Adapter scan delay was ${adapter.config.scandelay} set to 5 min!`,adapter.config.scandelay = 5);
     scanDelay = parseInt(adapter.config.scandelay) * 60* 1000; // minutes
 
     if (adapter.config.server)
@@ -495,7 +495,7 @@ function main() {
         }, 10))
 
         .catch(err => {
-            _W(`bmw initialization finished with error ${_O(err)}, will stop adapter!`);
+            _W(`BMW initialization finished with error ${_O(err)}, will stop adapter!`);
             stop(true);
             throw err;
         })
