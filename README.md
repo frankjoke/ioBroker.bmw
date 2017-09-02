@@ -21,6 +21,8 @@ Man kann filtern welche Daten angezeigt werden indem man im Admin die Einstellun
 
 Wenn der Adapter die Position vom Navigationssystem auslesen kann übersetz er diese mit Hilfe von Google auf eine Adresse und gibt diese unter navigation.formatted_address an.
 
+<small>p.s.: Ich möchte https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper und https://github.com/edent/BMW-i-Remote für die Beispiele danken mittels derer ich dann den Zugriff programmieren konnte! </small>
+
 ## Important/Wichtig
 * Adapter requires node >= v4.3.*!
 
