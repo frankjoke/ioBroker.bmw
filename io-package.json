@@ -2,10 +2,10 @@
     "common": {
         "name": "bmw",
         "version": "0.2.0",
-        "title": "Adapter to inspect BMW ConnectedDrive data",
+        "title": "BMW ConnectedDrive data",
         "desc": {
-            "en": "BMW en to do",
-            "de": "BMW de to do"
+            "en": "Queries BMW ConnectedDrive data for registered cars in your BMW account",
+            "de": "Fragt BMW ConnectedDrive Daten der registrierten Autus auf ihrem BMW account ab."
         },
         "authors": [
             "frankjoke <frankjoke@hotmail.com>"
@@ -20,7 +20,7 @@
         "loglevel": "info",
         "icon": "bmw.png",
         "keywords": [
-            "BMW"
+            "BMW", "ConnectedDrive"
         ],
         "extIcon": "https://raw.githubusercontent.com/frankjoke/iobroker.bmw/master/admin/bmw.png",
         "type": "hardware"
