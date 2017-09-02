@@ -19,7 +19,7 @@ Man kann filtern welche Daten angezeigt werden indem man im Admin die Einstellun
 * Einträge die in ihrer Hirarchie nach oben wandern sollen (bei mir attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList)
 * der zu verwendete Datenserver kann auch angegeben werden, der Default ist für den Rest der Welt, wer in anderen Regionen wohnt kann auch https://b2vapi.bmwgroup.cn:8592 für China, https://b2vapi.bmwgroup.us für USA und https://b2vapi.bmwgroup.com für Europe / Rest of World probieren. www.bmw-connecteddrive.com wird auf den letzten weitergeleitet.
 
-
+Wenn der Adapter die Position vom Navigationssystem auslesen kann übersetz er diese mit Hilfe von Google auf eine Adresse und gibt diese unter navigation.formatted_address an.
 
 ## Important/Wichtig
 * Adapter requires node >= v4.3.*!

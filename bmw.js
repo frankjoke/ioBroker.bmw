@@ -24,8 +24,8 @@ function _O(obj, level) { return util.inspect(obj, false, level || 2, false).rep
 
 // function _J(str) { try { return JSON.parse(str); } catch (e) { return {'error':'JSON Parse Error of:'+str}}} 
 function _N(fun) { return setTimeout.apply(null, [fun, 0].concat(Array.prototype.slice.call(arguments, 1))); } // move fun to next schedule keeping arguments
-//function _D(l, v) { adapter.log.debug(l); return v === undefined ? l : v; }
-function _D(str, val) { adapter.log.info(`<span style="color:darkblue;">debug: ${str}</span>`); return val !== undefined ? val : str; } // Write debug message in log, optionally return 2nd argument
+function _D(l, v) { adapter.log.debug(l); return v === undefined ? l : v; }
+//function _D(str, val) { adapter.log.info(`<span style="color:darkblue;">debug: ${str}</span>`); return val !== undefined ? val : str; } // Write debug message in log, optionally return 2nd argument
 function _I(l, v) { adapter.log.info(l); return v === undefined ? l : v; }
 function _W(l, v) { adapter.log.warn(l); return v === undefined ? l : v; }
 function _T(i) {
@@ -372,7 +372,7 @@ function requestVehicle(_rootData) {
     */
     return Promise.all(adapter.config.services.split(',').map(x => x.trim()).map(requestVehicleData, this))
         .then(() => convert(carData))
-        .then(car => vehicles[carData.vin] = car)
+        .then(car => vehicles[carData.vin] = _I(`Car ${carData.vin} with ${Object.keys(car).length} data points received`,car))
         .catch(e => _W(`RequestVehicleData Error ${e}`));
 }
 
@@ -499,6 +499,6 @@ function main() {
             stop(true);
             throw err;
         })
-        .then(x => _I('Adapter initialization finished!'))
+        .then(x => _I('BMW Adapter initialization finished!'))
         ;
 }
