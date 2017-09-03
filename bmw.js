@@ -206,7 +206,7 @@ adapter.on('ready', () => {
         }, err => _E('err from getObjectList: ' + err,'no'))
         .then(len => {
             _D(`${adapter.name} received ${len} objects with config ${_O(adapter.config)}`);
-            _I('System Objects: '+_O(P.objects,5))
+//            _D('System Objects: '+_O(P.objects,5))
             adapter.subscribeStates('*');
             return main();
         }).catch(err => _W(`Error in adapter.ready: ${err}`));
