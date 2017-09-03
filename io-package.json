@@ -1,7 +1,7 @@
 {
     "common": {
         "name": "bmw",
-        "version": "0.2.1",
+        "version": "0.2.2",
         "title": "BMW ConnectedDrive data",
         "desc": {
             "en": "Queries BMW ConnectedDrive data for registered cars in your BMW account",
@@ -33,7 +33,8 @@
         "services": "efficiency, dynamic, navigation, remoteservices/chargingprofile, servicepartner, service, specs",
         "delete": "modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages",
         "flatten": "attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList",
-        "arrays": "lastTripList|name|lastTrip|unit, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity"
+        "arrays": "lastTripList|name|lastTrip|unit, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity",
+        "forceinit": false
    },
     "objects": []
 }
