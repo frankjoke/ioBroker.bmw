@@ -44,8 +44,8 @@ const A = { // my Adapter object encapsulating all my default adapter variables/
 
     // function _J(str) { try { return JSON.parse(str); } catch (e) { return {'error':'JSON Parse Error of:'+str}}} 
     N: (fun) => setTimeout.apply(null, [fun, 0].concat(Array.prototype.slice.call(arguments, 1))), // move fun to next schedule keeping arguments
-    //D: (l, v) => (adapter.log.debug(l), v === undefined ? l : v),
-    D: (str, val) => (adapter.log.info(`<span style="color:darkblue;">debug: ${str}</span>`), val !== undefined ? val : str), // Write debug message in log, optionally return 2nd argument
+    D: (l, v) => (adapter.log.debug(l), v === undefined ? l : v),
+    // D: (str, val) => (adapter.log.info(`<span style="color:darkblue;">debug: ${str}</span>`), val !== undefined ? val : str), // Write debug message in log, optionally return 2nd argument
     I: (l, v) => (adapter.log.info(l), v === undefined ? l : v),
     W: (l, v) => (adapter.log.warn(l), v === undefined ? l : v),
     E: (l, v) => (adapter.log.error(l), v === undefined ? l : v),
