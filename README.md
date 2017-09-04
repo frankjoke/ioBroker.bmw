@@ -1,4 +1,4 @@
-# ![Logo](admin/bmw.png) ioBroker BMW Adapter zum Auslesen von ConnectedDrive-Daten
+# ![Logo](admin/bmw.png) BMW Adapter für ConnectedDrive-Daten
 
 [![NPM version](http://img.shields.io/npm/v/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
@@ -6,9 +6,8 @@
 Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjoke/iobroker.bmw?branch=master&svg=true)](https://ci.appveyor.com/project/frankjoke/ioBroker-bmw/)
 
 [![NPM](https://nodei.co/npm/iobroker.bmw.png?downloads=true)](https://nodei.co/npm/iobroker.bmw/)
-
 ==============
-## ioBroker bmw Adapter zum Auslesen von ConnectedDrive-Daten
+## BMW Adapter zum Auslesen von ConnectedDrive-Daten
 Der Adapter versucht die ConnectedDrive-Daten für die auf die angegebenen Benutzer registrierten Fahrzeuge.
 Man kann filtern welche Daten angezeigt werden indem man im Admin die Einstellungen für
 * zu verwendete services (ich verwende nur: efficiency, dynamic, navigation)
