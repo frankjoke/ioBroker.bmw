@@ -25,7 +25,6 @@
 </style>
 <!-- you have to define 2 functions in the global scope: -->
 <script type="text/javascript">
-    var devices = [];
     systemDictionary = {
         "bmw adapter settings": {"en": "bmw adapter settings", "de": "BMW Adapter-Einstellungen"},
         "bmw settings":         {"en": "bmw settings",         "de": "BMW-Einstellungen"},
@@ -40,8 +39,8 @@
                 "de": "Email die für ConnectedDrive-Login verwendet wird: "},
         "Password:":   {"en": "password to connected drive service: ",     
                 "de": "Passwort für ConnectedDrive Service: "},
-        "description":  {"de":"Bla Bla de",
-            "en": "Bla Bla Bla en"}
+        "Force init:": {"de":"Alle alten Objeke dieser Instanz beim Adapterstart löschen?",
+            "en": "Delete all old object for this adapter incance?"},
     };
 
     function setValue(id, value, onChange) {
@@ -77,7 +76,6 @@
     // the function loadSettings has to exist ...
     function load(settings, onChange) {
         if (!settings) return;
-        devices = settings.devices || [];
         for (var key in settings) {
             setValue(key, settings[key], onChange);
         }
@@ -114,6 +112,7 @@
         <tr><td class="translate">Email:</td><td><input class="value string" id="email" type="input" size="30"/></td></tr>
         <tr><td class="translate">Password:</td><td><input class="value string" id="password" type="password" size="30"/></td></tr>
         <tr><td class="translate">Server:</td><td><input class="value string" id="server" type="input" size="30"/></td></tr>
+        <tr><td class="translate">Force init:</td><td><input class="value" id="forceinit" type="checkbox"/></td></tr>
     </table>
     <p><span class="translate">Services:</span> <textarea class="value" id="services" style="width:90%;height:30px"></textarea><br></p>
     <p><span class="translate">Delete:</span><textarea class="value" id="delete" style="width:90%;height:60px"></textarea><br></p>

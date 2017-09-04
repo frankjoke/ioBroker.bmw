@@ -1,32 +1,36 @@
-![Logo](admin/bmw.png)
+# ![Logo](admin/bmw.png)
 
 [![NPM version](http://img.shields.io/npm/v/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 **Tests:** Linux/Mac: [![Travis-CI](http://img.shields.io/travis/frankjoke/iobroker.bmw/master.svg)](https://travis-ci.org/frankjoke/iobroker.bmw)
 Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjoke/iobroker.bmw?branch=master&svg=true)](https://ci.appveyor.com/project/frankjoke/ioBroker-bmw/)
 
-
 [![NPM](https://nodei.co/npm/iobroker.bmw.png?downloads=true)](https://nodei.co/npm/iobroker.bmw/)
 
 ==============
 
-# ioBroker bmw Adapter zum Auslesen von ConnectedDrive-Daten
-Der Adapter versucht die ConnectedDrive-Daten für die auf die angegebenen Benutzer registrierten Fahrzeuge. 
+## ioBroker bmw Adapter zum Auslesen von ConnectedDrive-Daten
+Der Adapter versucht die ConnectedDrive-Daten für die auf die angegebenen Benutzer registrierten Fahrzeuge.
 Man kann filtern welche Daten angezeigt werden indem man im Admin die Einstellungen für
 * zu verwendete services (ich verwende nur: efficiency, dynamic, navigation)
 * zu löschende Einträge (Bei mir Daten wie: modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages)
 * Einträge die von Arrays umgewandelt werden sollen (bei mir: lastTripList|name|lastTrip|unit, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity)
 * Einträge die in ihrer Hirarchie nach oben wandern sollen (bei mir attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList)
-* der zu verwendete Datenserver kann auch angegeben werden, der Default ist für den Rest der Welt, wer in anderen Regionen wohnt kann auch https://b2vapi.bmwgroup.cn:8592 für China, https://b2vapi.bmwgroup.us für USA und https://b2vapi.bmwgroup.com für Europe / Rest of World probieren. www.bmw-connecteddrive.com wird auf den letzten weitergeleitet.
+* der zu verwendete Datenserver kann auch angegeben werden, der Default ist für den Rest der Welt, wer in anderen Regionen wohnt kann auch <https://b2vapi.bmwgroup.cn:8592> für China, <https://b2vapi.bmwgroup.us> für USA und <https://b2vapi.bmwgroup.com> für Europe / Rest of World probieren. www.bmw-connecteddrive.com wird auf den letzten weitergeleitet.
+* Es kann angegeben werden ob alle alten Objekte bei einem Adapterneustart gelöscht werden sollen.  
 
 Wenn der Adapter die Position vom Navigationssystem auslesen kann übersetz er diese mit Hilfe von Google auf eine Adresse und gibt diese unter navigation.formatted_address an.
 
-<small>p.s.: Ich möchte https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper und https://github.com/edent/BMW-i-Remote für die Beispiele danken mittels derer ich dann den Zugriff programmieren konnte! </small>
+### p.s.: Ich möchte <https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper> und <https://github.com/edent/BMW-i-Remote> für die Beispiele danken mittels derer ich dann den Zugriff programmieren konnte!
 
 ## Important/Wichtig
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
+### 0.2.2
+* Multiple cars did not work - resolved
+* Flag to delete all car data on adapter start included
+
 ### 0.2.1
 * Small changes to the text and description as well as for npm
 
@@ -48,7 +52,7 @@ Der Benutzername, das Passwort und die Datenfilter müssen in Adapter config ein
 
 ## Installation
 
-Mit admin, iobroker oder von https://github.com/frankjoke/iobroker.bmw oder mit npm install iobroker.bmw
+Mit admin, iobroker oder von <https://github.com/frankjoke/iobroker.bmw> oder mit npm install iobroker.bmw
 
 ## License
 

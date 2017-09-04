@@ -13,12 +13,14 @@
 "use strict";
 const utils = require(__dirname + '/lib/utils'); // Get common adapter utils
 const adapter = utils.adapter('bmw');
+
 const util = require('util');
 const http = require('http');
 const https = require('https');
 const exec = require('child_process').exec;
 const querystring = require('querystring');
 const assert = require('assert');
+
 
 function _O(obj, level) { return util.inspect(obj, false, level || 2, false).replace(/\n/g, ' '); }
 
@@ -28,6 +30,7 @@ function _D(l, v) { adapter.log.debug(l); return v === undefined ? l : v; }
 //function _D(str, val) { adapter.log.info(`<span style="color:darkblue;">debug: ${str}</span>`); return val !== undefined ? val : str; } // Write debug message in log, optionally return 2nd argument
 function _I(l, v) { adapter.log.info(l); return v === undefined ? l : v; }
 function _W(l, v) { adapter.log.warn(l); return v === undefined ? l : v; }
+function _E(l, v) { adapter.log.error(l); return v === undefined ? l : v; }
 function _T(i) {
     var t = typeof i; if (t === 'object') {
         if (Array.isArray(i)) t = 'array';
@@ -44,10 +47,11 @@ const P = {
 
     series: (obj, promfn, delay) =>  { // fun gets(item) and returns a promise
         assert(typeof promfn === 'function', 'series(obj,promfn,delay) error: promfn is not a function!');
-        delay = delay || 0;
+        delay = parseInt(delay);
         let p = Promise.resolve();
         const nv = [],
-            f = (k) => p = p.then(() => promfn(k).then(res => P.wait(delay, nv.push(res))));
+            f = delay >0 ? (k) => p = p.then(() => promfn(k).then(res => P.wait(delay, nv.push(res))))
+                : (k) => p = p.then(() => promfn(k));
         for (let item of obj)
             f(item);
         return p.then(() => nv);
@@ -60,7 +64,7 @@ const P = {
         return function() {
             const args = Array.prototype.slice.call(arguments);
             return new Promise((res, rej) => {
-                args.push((err, result) => (err && _N(rej, err)) || _N(res, result));
+                args.push((err, result) => (err && rej(err)) || res(result));
                 f.apply(this, args);
             });
         }
@@ -71,7 +75,18 @@ const P = {
         return  function() {
             const args = Array.prototype.slice.call(arguments);
             return new Promise((res, rej) => {
-                args.push((result) => _N(res, result));
+                args.push((result) => res(result));
+                f.apply(this, args);
+            });
+        };
+    },
+
+    c1pe: (f) => { // one parameter != null = error
+        assert(typeof f === 'function', 'c1p (f) error: f is not a function!');
+        return  function() {
+            const args = Array.prototype.slice.call(arguments);
+            return new Promise((res, rej) => {
+                args.push((result) => !result ? res(result) : rej(result));
                 f.apply(this, args);
             });
         };
@@ -130,26 +145,32 @@ const P = {
     },
 
     initAdapter: () => {
+        P.ains = adapter.name + '.' + adapter.instance;
+        P.ain = P.ains + '.';
+        _D(`Adapter ${P.ains} starting.`);
         P.getObjectList = P.c2p(adapter.objects.getObjectList),
-            P.getForeignObject = P.c2p(adapter.getForeignObject),
-            P.setForeignObject = P.c2p(adapter.setForeignObject),
-            P.getForeignObjects = P.c2p(adapter.getForeignObjects),
-            P.getForeignState = P.c2p(adapter.getForeignState),
-            P.getState = P.c2p(adapter.getState),
-            P.setState = P.c2p(adapter.setState),
-            P.getObject = P.c2p(adapter.getObject),
-            P.deleteState = P.c2p(adapter.deleteState),
-            P.delObject = P.c2p(adapter.delObject),
-            P.setObject = P.c2p(adapter.setObject),
-            P.createState = P.c2p(adapter.createState),
-            P.extendObject = P.c2p(adapter.extendObject);
-    }
-    
+        P.getForeignObject = P.c2p(adapter.getForeignObject),
+        P.setForeignObject = P.c2p(adapter.setForeignObject),
+        P.getForeignObjects = P.c2p(adapter.getForeignObjects),
+        P.getForeignState = P.c2p(adapter.getForeignState),
+        P.getState = P.c2p(adapter.getState),
+        P.setState = P.c2p(adapter.setState),
+        P.getObject = P.c2p(adapter.getObject),
+//        P.deleteState = P.c2p(adapter.deleteState),
+        P.deleteState = (id) => P.c1pe(adapter.deleteState)(id).catch(res => res == 'Not exists' ? P.res() : P.rej(res)),
+        P.delState = (id,opt) => P.c1pe(adapter.delState)(id,opt).catch(res => res == 'Not exists' ? P.res() : P.rej(res)),
+        P.delObject = (id,opt) => P.c1pe(adapter.delObject)(id,opt).catch(res => res == 'Not exists' ? P.res() : P.rej(res)),
+        P.removeState = (id,opt) => P.delState(id,opt).then(() => P.delObject(id,opt)),
+        P.setObject = P.c2p(adapter.setObject),
+        P.createState = P.c2p(adapter.createState),
+        P.extendObject = P.c2p(adapter.extendObject);
+//        P.myDeleteState = function(id,opt) { return P.deleteState(id,opt).catch(res => null)}
+    },
+
 }
 
-var isStopping = false;
-const scanList = new Map();
-var scanDelay = 5 * 60 * 1000, // in ms = 5 min
+var isStopping = false,
+    scanDelay = 5 * 60 * 1000, // in ms = 5 min
     scanTimer = null;
 
 function stop(dostop) {
@@ -162,7 +183,34 @@ function stop(dostop) {
 
 adapter.on('message', obj => processMessage(obj));
 
-adapter.on('ready', () => main(P.initAdapter()));
+adapter.on('ready', () => {
+    P.initAdapter();
+    (!adapter.config.forceinit 
+        ? P.res({rows:[]}) 
+        : P.getObjectList({startkey: P.ain, endkey: P.ain + '\u9999'}))
+        .then(res => P.series(res.rows, (i) => P.removeState(_D('deleteState: '+ i.doc.common.name,i.doc.common.name)),2))
+        .then(res => res, err => _E('err from P.series: ' + err))
+        .then(() => P.getObjectList({include_docs: true}))
+        .then(res => {
+            res = res && res.rows ? res.rows : []; 
+            P.objects = {};
+            for(let i of res) 
+                P.objects[i.doc._id] = i.doc;
+            if (P.objects['system.config'] && P.objects['system.config'].common.language)
+                adapter.config.lang = P.objects['system.config'].common.language;
+            if (P.objects['system.config'] && P.objects['system.config'].common.latitude) {
+                adapter.config.latitude = parseFloat(P.objects['system.config'].common.latitude);
+                adapter.config.longitude = parseFloat(P.objects['system.config'].common.longitude);
+            }
+            return res.length;
+        }, err => _E('err from getObjectList: ' + err,'no'))
+        .then(len => {
+            _D(`${adapter.name} received ${len} objects with config ${_O(adapter.config)}`);
+//            _D('System Objects: '+_O(P.objects,5))
+            adapter.subscribeStates('*');
+            return main();
+        }).catch(err => _W(`Error in adapter.ready: ${err}`));
+});
 
 adapter.on('unload', () => stop(false));
 
@@ -194,7 +242,7 @@ function makeState(ido, value, ack) {
     ack = ack === undefined || !!ack;
     let id = ido;
     if (typeof id === 'string')
-        ido = {};
+        ido = id.endsWith('Percent') ? {unit: "%"} : {};
     else if (typeof id.id === 'string') {
         id = id.id;
     } else return Promise.reject(_W(`Invalid makeState id: ${_O(id)}`));
@@ -217,13 +265,11 @@ function makeState(ido, value, ack) {
     for (let i in ido)
         if (i != 'id' && i != 'val')
             st.common[i] = ido[i];
-    if (id.endsWith('Percent'))
-        st.common.unit = "%";
+
     return P.extendObject(id, st, null)
         .then(x => objects.set(id, x))
-        .then(() => P.setState(id, value, ack))
+        .then(() => st.common.state == 'state' ? P.setState(id, value, ack) : P.res())
         .catch(err => _D(`MS ${_O(err)}`, id));
-
 }
 
 function BMWrequest(_host, _path, _postData) {
@@ -431,25 +477,23 @@ function convert(car) {
         ;
 }
 
-var ain = '',
-    wlast = null,
+var wlast = null,
     lang = '',
-    host = null,
     dataList = {};
 
 
 function getCars() {
     dataList = {};
     return requestVehicles()
-        //        .then(() => _D(_O(vehicles,7)))
-        .then(() => P.series(Object.keys(vehicles), car => P.series(Object.keys(vehicles[car]), id => makeState(_D(`${id}: ${vehicles[car][id]}`, id), vehicles[car][id], true), 1)))
+        .then(() => P.series(Object.keys(vehicles), 
+            car => P.series(Object.keys(vehicles[car]), 
+                id => makeState(_D(`${ car+'.'+id}: ${vehicles[car][id]}`, car+'.'+id), 
+                    vehicles[car][id], true), 1)))
+//                id => P.res(id))))
         ;
 }
 
 function main() {
-    host = adapter.host;
-    ain = adapter.name + '.' + adapter.instance + '.';
-
     if (!adapter.config.scandelay || parseInt(adapter.config.scandelay) < 5)
         _W(`BMW Adapter scan delay was ${adapter.config.scandelay} set to 5 min!`,adapter.config.scandelay = 5);
     scanDelay = parseInt(adapter.config.scandelay) * 60* 1000; // minutes
@@ -481,18 +525,15 @@ function main() {
             scanTimer = setInterval(getCars, scanDelay);
             return getCars(); // scan first time and generate states if they do not exist yet
         })
-        .then(res => P.getObjectList({ startkey: ain, endkey: ain + '\u9999' }))
+        .then(res => P.getObjectList({ startkey: P.ain, endkey: P.ain + '\u9999' }))
         .then(res => P.series(res.rows, item => {  // clean all states which are not part of the list
             //            _I(`Check ${_O(item)}`);
-            let id = item.id.slice(ain.length);
+            let id = item.id.slice(P.ain.length);
             if (objects.has(id))
                 return P.res();
             //            _I(`Delete ${_O(item)}`);
-            return P.deleteState(id)
-                .then(x => _D(`Del State: ${id}`), err => _D(`Del State err: ${_O(err)}`)) ///TC
-                .then(y => P.delObject(id))
-                .then(x => _D(`Del Object: ${id}`), err => _D(`Del Object err: ${_O(err)}`)) ///TC
-        }, 10))
+            return P.removeState(id);
+        }, 2))
 
         .catch(err => {
             _W(`BMW initialization finished with error ${_O(err)}, will stop adapter!`);
