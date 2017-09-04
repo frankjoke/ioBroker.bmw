@@ -8,7 +8,7 @@
  *
  */
 /* eslint-env node,es6 */
-/* jshint -W097 */// jshint strict:false
+/* jshint -W097 */ // jshint strict:false
 /*jslint node: true */
 "use strict";
 const utils = require(__dirname + '/lib/utils'); // Get common adapter utils
@@ -22,36 +22,50 @@ const querystring = require('querystring');
 const assert = require('assert');
 
 
-function _O(obj, level) { return util.inspect(obj, false, level || 2, false).replace(/\n/g, ' '); }
+const A = { // my Adapter object encapsulating all my default adapter variables/functions and Promises
+    isStopping: false,
+    scanDelay: 5 * 60 * 1000, // in ms = 5 min
+    scanTimer: null,
 
-// function _J(str) { try { return JSON.parse(str); } catch (e) { return {'error':'JSON Parse Error of:'+str}}} 
-function _N(fun) { return setTimeout.apply(null, [fun, 0].concat(Array.prototype.slice.call(arguments, 1))); } // move fun to next schedule keeping arguments
-function _D(l, v) { adapter.log.debug(l); return v === undefined ? l : v; }
-//function _D(str, val) { adapter.log.info(`<span style="color:darkblue;">debug: ${str}</span>`); return val !== undefined ? val : str; } // Write debug message in log, optionally return 2nd argument
-function _I(l, v) { adapter.log.info(l); return v === undefined ? l : v; }
-function _W(l, v) { adapter.log.warn(l); return v === undefined ? l : v; }
-function _E(l, v) { adapter.log.error(l); return v === undefined ? l : v; }
-function _T(i) {
-    var t = typeof i; if (t === 'object') {
-        if (Array.isArray(i)) t = 'array';
-        else if (i instanceof RegExp) t = 'regexp';
-        else if (i === null) t = 'null';
-    } else if (t === 'number' && isNaN(i)) t = 'NaN';
-    return t;
-}
+    stop: (dostop) => {
+        A.isStopping = true;
+        if (A.scanTimer)
+            clearInterval(A.scanTimer);
+        A.scanTimer = null;
+        if (adapter && adapter.log && adapter.log.warn)
+            A.W(`Adapter disconnected and stopped with (${dostop})`);
+    },
 
-const P = {
     res: (what) => Promise.resolve(what),
     rej: (what) => Promise.reject(what),
     wait: (time, arg) => new Promise(res => setTimeout(res, time, arg)),
 
-    series: (obj, promfn, delay) =>  { // fun gets(item) and returns a promise
+    O: (obj, level) => util.inspect(obj, false, level || 2, false).replace(/\n/g, ' '),
+
+    // function _J(str) { try { return JSON.parse(str); } catch (e) { return {'error':'JSON Parse Error of:'+str}}} 
+    N: (fun) => setTimeout.apply(null, [fun, 0].concat(Array.prototype.slice.call(arguments, 1))), // move fun to next schedule keeping arguments
+    D: (l, v) => (adapter.log.debug(l), v === undefined ? l : v),
+    // D: (str, val) => (adapter.log.info(`<span style="color:darkblue;">debug: ${str}</span>`), val !== undefined ? val : str), // Write debug message in log, optionally return 2nd argument
+    I: (l, v) => (adapter.log.info(l), v === undefined ? l : v),
+    W: (l, v) => (adapter.log.warn(l), v === undefined ? l : v),
+    E: (l, v) => (adapter.log.error(l), v === undefined ? l : v),
+    T: (i) => {
+        var t = typeof i;
+        if (t === 'object') {
+            if (Array.isArray(i)) t = 'array';
+            else if (i instanceof RegExp) t = 'regexp';
+            else if (i === null) t = 'null';
+        } else if (t === 'number' && isNaN(i)) t = 'NaN';
+        return t;
+    },
+
+    series: (obj, promfn, delay) => { // fun gets(item) and returns a promise
         assert(typeof promfn === 'function', 'series(obj,promfn,delay) error: promfn is not a function!');
         delay = parseInt(delay);
         let p = Promise.resolve();
         const nv = [],
-            f = delay >0 ? (k) => p = p.then(() => promfn(k).then(res => P.wait(delay, nv.push(res))))
-                : (k) => p = p.then(() => promfn(k));
+            f = delay > 0 ? (k) => p = p.then(() => promfn(k).then(res => A.wait(delay, nv.push(res)))) :
+            (k) => p = p.then(() => promfn(k));
         for (let item of obj)
             f(item);
         return p.then(() => nv);
@@ -61,7 +75,7 @@ const P = {
         assert(typeof f === 'function', 'c2p (f) error: f is not a function!');
         if (!f)
             throw new Error(`f = null in c2pP definition!`);
-        return function() {
+        return function () {
             const args = Array.prototype.slice.call(arguments);
             return new Promise((res, rej) => {
                 args.push((err, result) => (err && rej(err)) || res(result));
@@ -72,7 +86,7 @@ const P = {
 
     c1p: (f) => {
         assert(typeof f === 'function', 'c1p (f) error: f is not a function!');
-        return  function() {
+        return function () {
             const args = Array.prototype.slice.call(arguments);
             return new Promise((res, rej) => {
                 args.push((result) => res(result));
@@ -82,8 +96,8 @@ const P = {
     },
 
     c1pe: (f) => { // one parameter != null = error
-        assert(typeof f === 'function', 'c1p (f) error: f is not a function!');
-        return  function() {
+        assert(typeof f === 'function', 'c1pe (f) error: f is not a function!');
+        return function () {
             const args = Array.prototype.slice.call(arguments);
             return new Promise((res, rej) => {
                 args.push((result) => !result ? res(result) : rej(result));
@@ -93,22 +107,25 @@ const P = {
     },
 
     retry: (nretry, fn, arg) => {
-        return fn(arg).catch(err => { 
-            if (nretry <= 0) 
+        assert(typeof fn === 'function', 'retry (,fn,) error: fn is not a function!');
+        return fn(arg).catch(err => {
+            if (nretry <= 0)
                 throw err;
-            return P.retry(nretry - 1, fn,arg); 
+            return A.retry(nretry - 1, fn, arg);
         });
     },
-    
+
     repeat: (nretry, fn, arg) => {
-        return fn(arg).then(() => Promise.reject()).catch(err => { 
+        assert(typeof fn === 'function', 'repeat (,fn,) error: fn is not a function!');
+        return fn(arg).then(() => Promise.reject()).catch(err => {
             if (nretry <= 0)
                 return Promise.resolve();
-            return P.repeat(nretry - 1, fn,arg); 
+            return A.repeat(nretry - 1, fn, arg);
         });
     },
 
     exec: (command) => {
+        assert(typeof fn === 'string', 'exec (fn) error: fn is not a string!');
         const istest = command.startsWith('!');
         return new Promise((resolve, reject) => {
             exec(istest ? command.slice(1) : command, (error, stdout, stderr) => {
@@ -121,16 +138,16 @@ const P = {
         });
     },
 
-    get: (url,retry) => {     // get a web page either with http or https and return a promise for the data, could be done also with request but request is now an external package and http/https are part of nodejs.
+    get: (url, retry) => { // get a web page either with http or https and return a promise for the data, could be done also with request but request is now an external package and http/https are part of nodejs.
         const fun = typeof url === 'string' && url.trim().toLowerCase().startsWith('https') ||
             url.protocol == 'https' ? https.get : http.get;
-        return (new Promise((resolve,reject)=> {
+        return (new Promise((resolve, reject) => {
             fun(url, (res) => {
                 const statusCode = res.statusCode;
                 const contentType = res.headers['content-type'];
                 if (statusCode !== 200) {
                     const error = new Error(`Request Failed. Status Code: ${statusCode}`);
-                    res.resume();                 // consume response data to free up memory
+                    res.resume(); // consume response data to free up memory
                     return reject(error);
                 }
                 res.setEncoding('utf8');
@@ -140,137 +157,126 @@ const P = {
             }).on('error', (e) => reject(e));
         })).catch(err => {
             if (!retry) reject(err);
-            return P.wait(100,retry -1).then(a => P.get(url,a));
+            return A.wait(100, retry - 1).then(a => A.get(url, a));
         });
     },
 
     initAdapter: () => {
-        P.ains = adapter.name + '.' + adapter.instance;
-        P.ain = P.ains + '.';
-        _D(`Adapter ${P.ains} starting.`);
-        P.getObjectList = P.c2p(adapter.objects.getObjectList),
-        P.getForeignObject = P.c2p(adapter.getForeignObject),
-        P.setForeignObject = P.c2p(adapter.setForeignObject),
-        P.getForeignObjects = P.c2p(adapter.getForeignObjects),
-        P.getForeignState = P.c2p(adapter.getForeignState),
-        P.getState = P.c2p(adapter.getState),
-        P.setState = P.c2p(adapter.setState),
-        P.getObject = P.c2p(adapter.getObject),
-//        P.deleteState = P.c2p(adapter.deleteState),
-        P.deleteState = (id) => P.c1pe(adapter.deleteState)(id).catch(res => res == 'Not exists' ? P.res() : P.rej(res)),
-        P.delState = (id,opt) => P.c1pe(adapter.delState)(id,opt).catch(res => res == 'Not exists' ? P.res() : P.rej(res)),
-        P.delObject = (id,opt) => P.c1pe(adapter.delObject)(id,opt).catch(res => res == 'Not exists' ? P.res() : P.rej(res)),
-        P.removeState = (id,opt) => P.delState(id,opt).then(() => P.delObject(id,opt)),
-        P.setObject = P.c2p(adapter.setObject),
-        P.createState = P.c2p(adapter.createState),
-        P.extendObject = P.c2p(adapter.extendObject);
-//        P.myDeleteState = function(id,opt) { return P.deleteState(id,opt).catch(res => null)}
+        A.ains = adapter.name + '.' + adapter.instance;
+        A.ain = A.ains + '.';
+        A.D(`Adapter ${A.ains} starting.`);
+        A.getObjectList = A.c2p(adapter.objects.getObjectList),
+            A.getForeignObject = A.c2p(adapter.getForeignObject),
+            A.setForeignObject = A.c2p(adapter.setForeignObject),
+            A.getForeignObjects = A.c2p(adapter.getForeignObjects),
+            A.getForeignState = A.c2p(adapter.getForeignState),
+            A.getState = A.c2p(adapter.getState),
+            A.setState = A.c2p(adapter.setState),
+            A.getObject = A.c2p(adapter.getObject),
+            A.deleteState = (id) => A.c1pe(adapter.deleteState)(id).catch(res => res == 'Not exists' ? A.res() : A.rej(res)),
+            A.delState = (id, opt) => A.c1pe(adapter.delState)(id, opt).catch(res => res == 'Not exists' ? A.res() : A.rej(res)),
+            A.delObject = (id, opt) => A.c1pe(adapter.delObject)(id, opt).catch(res => res == 'Not exists' ? A.res() : A.rej(res)),
+            A.removeState = (id, opt) => A.delState(id, opt).then(() => A.delObject(id, opt)),
+            A.setObject = A.c2p(adapter.setObject),
+            A.createState = A.c2p(adapter.createState),
+            A.extendObject = A.c2p(adapter.extendObject);
+        A.states = {};
+        (!adapter.config.forceinit ?
+            A.res({
+                rows: []
+            }) :
+            A.getObjectList({
+                startkey: A.ain,
+                endkey: A.ain + '\u9999'
+            }))
+        .then(res => A.series(res.rows, (i) => A.removeState(A.D('deleteState: ' + i.doc.common.name, i.doc.common.name)), 2))
+            .then(res => res, err => A.E('err from A.series: ' + err))
+            .then(() => A.getObjectList({
+                include_docs: true
+            }))
+            .then(res => {
+                res = res && res.rows ? res.rows : [];
+                A.objects = {};
+                for (let i of res)
+                    A.objects[i.doc._id] = i.doc;
+                if (A.objects['system.config'] && A.objects['system.config'].common.language)
+                    adapter.config.lang = A.objects['system.config'].common.language;
+                if (A.objects['system.config'] && A.objects['system.config'].common.latitude) {
+                    adapter.config.latitude = parseFloat(A.objects['system.config'].common.latitude);
+                    adapter.config.longitude = parseFloat(A.objects['system.config'].common.longitude);
+                }
+                return res.length;
+            }, err => A.E('err from getObjectList: ' + err, 'no'))
+            .then(len => {
+                A.D(`${adapter.name} received ${len} objects with config ${Object.keys(adapter.config)}`);
+                //            A.D('System Objects: '+A.O(A.objects,5))
+                adapter.subscribeStates('*');
+                return main();
+            }).catch(err => A.W(`Error in adapter.ready: ${err}`));
     },
 
-}
+    makeState: function (ido, value, ack) {
+        ack = ack === undefined || !!ack;
+        let id = ido;
+        if (typeof id === 'string')
+            ido = id.endsWith('Percent') ? {
+                unit: "%"
+            } : {};
+        else if (typeof id.id === 'string') {
+            id = id.id;
+        } else return Promise.reject(A.W(`Invalid makeState id: ${A.O(id)}`));
+        if (A.states[id])
+            return A.setState(id, value, ack);
+        //    A.D(`Make State ${id} and set value to:${A.O(value)} ack:${ack}`) ///TC
+        var st = {
+            common: {
+                name: id, // You can add here some description
+                read: true,
+                write: false,
+                state: 'state',
+                role: 'value',
+                type: typeof value
+            },
+            type: 'state',
+            _id: id
+        };
 
-var isStopping = false,
-    scanDelay = 5 * 60 * 1000, // in ms = 5 min
-    scanTimer = null;
+        for (let i in ido)
+            if (i != 'id' && i != 'val')
+                st.common[i] = ido[i];
 
-function stop(dostop) {
-    isStopping = true;
-    if (scanTimer)
-        clearInterval(scanTimer);
-    scanTimer = null;
-    _W('Adapter disconnected and stopped');
-}
+        return A.extendObject(id, st, null)
+            .then(x => A.states[id] = x)
+            .then(() => st.common.state == 'state' ? A.setState(id, value, ack) : A.res())
+            .catch(err => A.D(`MS ${A.O(err)}`, id));
+    },
 
-adapter.on('message', obj => processMessage(obj));
-
-adapter.on('ready', () => {
-    P.initAdapter();
-    (!adapter.config.forceinit 
-        ? P.res({rows:[]}) 
-        : P.getObjectList({startkey: P.ain, endkey: P.ain + '\u9999'}))
-        .then(res => P.series(res.rows, (i) => P.removeState(_D('deleteState: '+ i.doc.common.name,i.doc.common.name)),2))
-        .then(res => res, err => _E('err from P.series: ' + err))
-        .then(() => P.getObjectList({include_docs: true}))
-        .then(res => {
-            res = res && res.rows ? res.rows : []; 
-            P.objects = {};
-            for(let i of res) 
-                P.objects[i.doc._id] = i.doc;
-            if (P.objects['system.config'] && P.objects['system.config'].common.language)
-                adapter.config.lang = P.objects['system.config'].common.language;
-            if (P.objects['system.config'] && P.objects['system.config'].common.latitude) {
-                adapter.config.latitude = parseFloat(P.objects['system.config'].common.latitude);
-                adapter.config.longitude = parseFloat(P.objects['system.config'].common.longitude);
-            }
-            return res.length;
-        }, err => _E('err from getObjectList: ' + err,'no'))
-        .then(len => {
-            _D(`${adapter.name} received ${len} objects with config ${_O(adapter.config)}`);
-//            _D('System Objects: '+_O(P.objects,5))
-            adapter.subscribeStates('*');
-            return main();
-        }).catch(err => _W(`Error in adapter.ready: ${err}`));
-});
-
-adapter.on('unload', () => stop(false));
-
-function processMessage(obj) {
-    if (obj && obj.command) {
-        _D(`process Message ${_O(obj)}`);
-        switch (obj.command) {
-            case 'ping': {
-                // Try to connect to mqtt broker
-                if (obj.callback && obj.message) {
-                    ping.probe(obj.message, { log: adapter.log.debug }, function (err, result) {
-                        adapter.sendTo(obj.from, obj.command, res, obj.callback);
-                    });
-                }
-                break;
+    processMessage: (obj) => {
+        if (obj && obj.command) {
+            A.D(`process Message ${A.O(obj)}`);
+            switch (obj.command) {
+                case 'ping':
+                    { // Try to connect to mqtt broker
+                        if (obj.callback && obj.message) {
+                            ping.probe(obj.message, {
+                                log: adapter.log.debug
+                            }, function (err, result) {
+                                adapter.sendTo(obj.from, obj.command, res, obj.callback);
+                            });
+                        }
+                        break;
+                    }
             }
         }
+        adapter.getMessage((err, obj) => obj ? A.processMessage(obj) : null);
     }
-    adapter.getMessage(function (err, obj) {
-        if (obj) {
-            processMessage(obj);
-        }
-    });
 }
 
-const objects = new Map();
+adapter.on('message', obj => A.processMessage(obj));
 
-function makeState(ido, value, ack) {
-    ack = ack === undefined || !!ack;
-    let id = ido;
-    if (typeof id === 'string')
-        ido = id.endsWith('Percent') ? {unit: "%"} : {};
-    else if (typeof id.id === 'string') {
-        id = id.id;
-    } else return Promise.reject(_W(`Invalid makeState id: ${_O(id)}`));
-    if (objects.has(id))
-        return P.setState(id, value, ack);
-    //    _D(`Make State ${id} and set value to:${_O(value)} ack:${ack}`) ///TC
-    var st = {
-        common: {
-            name: id, // You can add here some description
-            read: true,
-            write: false,
-            state: 'state',
-            role: 'value',
-            type: typeof value
-        },
-        type: 'state',
-        _id: id
-    };
+adapter.on('ready', () => A.initAdapter());
 
-    for (let i in ido)
-        if (i != 'id' && i != 'val')
-            st.common[i] = ido[i];
-
-    return P.extendObject(id, st, null)
-        .then(x => objects.set(id, x))
-        .then(() => st.common.state == 'state' ? P.setState(id, value, ack) : P.res())
-        .catch(err => _D(`MS ${_O(err)}`, id));
-}
+adapter.on('unload', () => A.stop(false));
 
 function BMWrequest(_host, _path, _postData) {
     return new Promise((_res, _rej) => {
@@ -291,21 +297,24 @@ function BMWrequest(_host, _path, _postData) {
             options.headers.Authorization = token.tokenType + " " + token.token;
         }
 
-        //	_D("Calling " + options.hostname + options.path);
+        //	A.D("Calling " + options.hostname + options.path);
 
         const req = https.request(options, (res) => {
-            //		_D('STATUSCODE: ' + res.statusCode);
-            //		_D('HEADERS: ' + JSON.stringify(res.headers));
+            //		A.D('STATUSCODE: ' + res.statusCode);
+            //		A.D('HEADERS: ' + JSON.stringify(res.headers));
             res.setEncoding('utf8');
 
             var data = "";
 
             res.on('data', (chunk) => data += chunk);
-            res.on('end', () => _res({ data: data, headers: res.headers }));
+            res.on('end', () => _res({
+                data: data,
+                headers: res.headers
+            }));
         });
 
         req.on('error', (e) => {
-            _W('BMWrequest error: ' + e.message);
+            A.W('BMWrequest error: ' + e.message);
             _rej(e);
         });
 
@@ -345,16 +354,15 @@ function requestToken() {
         .then(res => {
             var location = res.headers.location;
 
-            //            _D('HEADERS: ' + _O(res.headers));
+            //            A.D('HEADERS: ' + A.O(res.headers));
             if (location === 'undefined')
-                return _PE("unexpected response, location header not defined");
+                return A.rej("unexpected response, location header not defined");
 
             var values = querystring.parse(location);
 
             return JSON.stringify(values, null, 4);
         })
-        .then(res => readTokenData(res))
-        ;
+        .then(res => readTokenData(res));
 }
 
 function readTokenData(data) {
@@ -378,7 +386,7 @@ function readTokenData(data) {
             expired = now > expireTimestamp;
 
         if (expired)
-            _res(_D("Token expired, requesting a new one", requestToken()));
+            _res(A.D("Token expired, requesting a new one", requestToken()));
 
         if (!tokenFileExists) {
             token.data = json;
@@ -392,19 +400,18 @@ function BMWinitialize() {
     if (!token.data)
         return requestToken();
     return readTokenData(token.data)
-        .catch(err => _W("Failed to use existing token from file, error " + err + ", will request a new one", requestToken()));
+        .catch(err => A.W("Failed to use existing token from file, error " + err + ", will request a new one", requestToken()));
 }
 
-var g_api_host = 'www.bmw-connecteddrive.de';
 var vehicles = {};
 
 function requestVehicle(_rootData) {
     var carData = _rootData;
 
     function requestVehicleData(_type) {
-        return BMWrequest(g_api_host, '/api/vehicle/' + _type + '/v1/' + carData.vin)
+        return BMWrequest(adapter.config.server, '/api/vehicle/' + _type + '/v1/' + carData.vin)
             .then(res => JSON.parse(res.data))
-            .then(res => res.error ? res.error_description : (carData[_type.split('/').slice(-1)[0]] = _D(_O(res), res)));
+            .then(res => res.error ? res.error_description : (carData[_type.split('/').slice(-1)[0]] = A.D(A.O(res), res)));
     }
 
     /*
@@ -418,15 +425,15 @@ function requestVehicle(_rootData) {
     */
     return Promise.all(adapter.config.services.split(',').map(x => x.trim()).map(requestVehicleData, this))
         .then(() => convert(carData))
-        .then(car => vehicles[carData.vin] = _I(`Car ${carData.vin} with ${Object.keys(car).length} data points received`,car))
-        .catch(e => _W(`RequestVehicleData Error ${e}`));
+        .then(car => vehicles[carData.vin] = A.I(`Car ${carData.vin} with ${Object.keys(car).length} data points received`, car))
+        .catch(e => A.W(`RequestVehicleData Error ${e}`));
 }
 
 function requestVehicles() {
-    return BMWrequest(g_api_host, '/api/me/vehicles/v2')
+    return BMWrequest(adapter.config.server, '/api/me/vehicles/v2')
         //        .then(res => pSeries(JSON.parse(res.data), veh => requestVehicle(veh)))
         .then(res => Promise.all(JSON.parse(res.data).map(requestVehicle)))
-        .catch(e => _W(`RequestVehicles Error ${e}`));
+        .catch(e => A.W(`RequestVehicles Error ${e}`));
 }
 
 function convert(car) {
@@ -440,11 +447,11 @@ function convert(car) {
         });
 
     function convObj(obj, namelist, last) {
-        if (_T(obj) == 'array') {
-            if (obj.length > 0 && _T(obj[0]) != 'object')
+        if (A.T(obj) == 'array') {
+            if (obj.length > 0 && A.T(obj[0]) != 'object')
                 obj = obj.join(', ');
             else {
-                //                _D(`${last}: ${arrs[last]} = ${_O(obj)}`);
+                //                A.D(`${last}: ${arrs[last]} = ${A.O(obj)}`);
                 if (arrs[last]) {
                     let m = arrs[last]
                     for (let j of obj) {
@@ -456,25 +463,28 @@ function convert(car) {
                 }
             }
         }
-        if (_T(obj) != 'object' && _T(obj) != 'array')
+        if (A.T(obj) != 'object' && A.T(obj) != 'array')
             return list[namelist] = obj;
-        else if (_T(obj) == 'object')
+        else if (A.T(obj) == 'object')
             for (let i in obj)
                 if (!dell.includes(i))
                     convObj(obj[i], flat.includes(i) ? namelist : ((namelist != '' ? namelist + '.' : '') + i), i)
     }
-    return (car.navigation && car.navigation.latitude && car.navigation.longitude ? 
-        P.get(`http://maps.googleapis.com/maps/api/geocode/json?latlng=${car.navigation.latitude},${car.navigation.longitude}&sensor=true`)
-        : P.res({results: [{formatted_address:'N/A'}]}))
+    return (car.navigation && car.navigation.latitude && car.navigation.longitude ?
+            A.get(`http://maps.googleapis.com/maps/api/geocode/json?latlng=${car.navigation.latitude},${car.navigation.longitude}&sensor=true`) :
+            A.res({
+                results: [{
+                    formatted_address: 'N/A'
+                }]
+            }))
         .then(res => {
             res = JSON.parse(res);
             if (car.navigation && res && res.results && res.results[0] && res.results[0].formatted_address)
                 car.navigation.formatted_address = res.results[0].formatted_address;
-            _D(`Added car location ${car.navigation.formatted_address}`);
+            A.D(`Added car location ${car.navigation.formatted_address}`);
             return null;
-        }).then(() => (convObj(car, ''),list))
-        .catch(err => _W(`Error in covert car data: ${err}`,list))
-        ;
+        }).then(() => (convObj(car, ''), list))
+        .catch(err => A.W(`Error in covert car data: ${err}`, list));
 }
 
 var wlast = null,
@@ -485,61 +495,44 @@ var wlast = null,
 function getCars() {
     dataList = {};
     return requestVehicles()
-        .then(() => P.series(Object.keys(vehicles), 
-            car => P.series(Object.keys(vehicles[car]), 
-                id => makeState(_D(`${ car+'.'+id}: ${vehicles[car][id]}`, car+'.'+id), 
-                    vehicles[car][id], true), 1)))
-//                id => P.res(id))))
-        ;
+        .then(() => A.series(Object.keys(vehicles),
+            car => A.series(Object.keys(vehicles[car]),
+                id => A.makeState(A.D(`${ car+'.'+id}: ${vehicles[car][id]}`, car + '.' + id),
+                    vehicles[car][id], true), 1)));
 }
 
 function main() {
     if (!adapter.config.scandelay || parseInt(adapter.config.scandelay) < 5)
-        _W(`BMW Adapter scan delay was ${adapter.config.scandelay} set to 5 min!`,adapter.config.scandelay = 5);
-    scanDelay = parseInt(adapter.config.scandelay) * 60* 1000; // minutes
+        A.W(`BMW Adapter scan delay was ${adapter.config.scandelay} set to 5 min!`, adapter.config.scandelay = 5);
+    A.scanDelay = parseInt(adapter.config.scandelay) * 60 * 1000; // minutes
 
-    if (adapter.config.server)
-        g_api_host = adapter.config.server;
+    adapter.config.server = A.T(adapter.config.server) == 'string' && adapter.config.server.length>10 ? adapter.config.server :   'www.bmw-connecteddrive.com';
+    
+    A.I(`BMW set to scan data on ConnectedDrive every ${adapter.config.scandelay} minutes.`);
 
-    _I(`BMW set to scan data on ConnectedDrive every ${adapter.config.scandelay} minutes.`);
-
-    P.wait(100)
+    A.wait(100)  // just wait a bit to give other background a chance to complete as well.
         .then(() => BMWinitialize())
-        .then(x => _D(`Initialized, client_id= ${_O(token)}`))
-        /*        .then(() => P.getObjectList({ include_docs: true }))
-                .then(res => {
-                    var r = {};
-                    res.rows.map(i => r[i.doc._id] = i.doc)
-                    if (r['system.config'] && r['system.config'].common.language)
-                        lang = r['system.config'].common.language;
-                    if (r['system.config'] && r['system.config'].common.latitude) {
-                        adapter.config.latitude = parseFloat(r['system.config'].common.latitude);
-                        adapter.config.longitude = parseFloat(r['system.config'].common.longitude);
-                    } else return Promise.reject(_W('No geo location data found configured in admin to calculate UWZ AREA ID!'));
-                }) 
-                .then(x => x, err => null)
-                //        .then(() => requestVehicles())
-                //        .then(x => _D(`Found vehicles: ${_O(vehicles,7)}`))
-        */
-        .then(res => {
-            scanTimer = setInterval(getCars, scanDelay);
+        .then(x => A.D(`Initialized, client_id= ${A.O(token)}`))
+        .then(res => { // everything fine, start timer and get gar data first time
+            A.scanTimer = setInterval(getCars, A.scanDelay);
             return getCars(); // scan first time and generate states if they do not exist yet
         })
-        .then(res => P.getObjectList({ startkey: P.ain, endkey: P.ain + '\u9999' }))
-        .then(res => P.series(res.rows, item => {  // clean all states which are not part of the list
-            //            _I(`Check ${_O(item)}`);
-            let id = item.id.slice(P.ain.length);
-            if (objects.has(id))
-                return P.res();
-            //            _I(`Delete ${_O(item)}`);
-            return P.removeState(id);
+        .then(res => A.getObjectList({  // this check object list for old objects not transmitted anymore
+            startkey: A.ain,
+            endkey: A.ain + '\u9999'
+        }))
+        .then(res => A.series(res.rows, item => { // clean all states which are not part of the list
+            let id = item.id.slice(A.ain.length);
+            if (A.states[id])
+                return A.res();
+            A.I(`Delete unneeded ${A.O(item)}`);
+            return A.removeState(id);
         }, 2))
 
         .catch(err => {
-            _W(`BMW initialization finished with error ${_O(err)}, will stop adapter!`);
+            A.W(`BMW initialization finished with error ${A.O(err)}, will stop adapter!`);
             stop(true);
             throw err;
         })
-        .then(x => _I('BMW Adapter initialization finished!'))
-        ;
+        .then(x => A.I('BMW Adapter initialization finished!'));
 }
