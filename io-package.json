@@ -1,11 +1,11 @@
 {
     "common": {
         "name": "bmw",
-        "version": "0.2.2",
-        "title": "BMW ConnectedDrive data",
+        "version": "1.0.0",
+        "title": "BMW ConnectedDrive data Adapter",
         "desc": {
             "en": "Queries BMW ConnectedDrive data for registered cars in your BMW account",
-            "de": "Fragt BMW ConnectedDrive Daten der registrierten Autus auf ihrem BMW account ab."
+            "de": "Fragt BMW ConnectedDrive Daten der registrierten Autos auf ihrem BMW account ab."
         },
         "authors": [
             "frankjoke <frankjoke@hotmail.com>"
@@ -30,11 +30,10 @@
         "server": "www.bmw-connecteddrive.com",
         "email": "email/usename",
         "password": "password",
-        "services": "efficiency, dynamic, navigation, remoteservices/chargingprofile, servicepartner, service, specs",
+        "services": "efficiency, dynamic, navigation, remote_execution, remote_chargingprofile, remote_history, servicepartner, service, specs",
         "delete": "modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages",
-        "flatten": "attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList",
-        "arrays": "lastTripList|name|lastTrip|unit, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity",
-        "forceinit": false
-   },
+        "flatten": "attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList, remoteServiceEvent",
+        "arrays": "lastTripList|name|lastTrip|unit, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity, remote_history|eventId"
+    },
     "objects": []
 }

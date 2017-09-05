@@ -1,7 +1,7 @@
 {
   "name": "iobroker.bmw",
   "description": "ioBroker adapter to read BMW ConnectedDrive data",
-  "version": "0.2.2",
+  "version": "1.0.0",
   "author": "frankjoke <frankjoke@hotmail.com>",
   "contributors": [
     "frankjoke <frankjoke@hotmail.com>"
@@ -33,7 +33,9 @@
   "scripts": {
     "test": "node node_modules/mocha/bin/mocha"
   },
-  "dependencies": {},
+  "dependencies": {
+    "xml2js": "^0.4.19"
+  },
   "optionalDependencies": {},
   "directories": {
     "test": "test"

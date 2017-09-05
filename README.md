@@ -1,4 +1,4 @@
-# ![Logo](admin/bmw.png) BMW Adapter für ConnectedDrive-Daten
+# ![Logo](admin/bmw.png) Adapter für BMW ConnectedDrive-Daten
 
 [![NPM version](http://img.shields.io/npm/v/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
@@ -7,24 +7,30 @@ Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjo
 
 [![NPM](https://nodei.co/npm/iobroker.bmw.png?downloads=true)](https://nodei.co/npm/iobroker.bmw/)
 ==============
-## BMW Adapter zum Auslesen von ConnectedDrive-Daten
+### Adapter zum Auslesen von BMW ConnectedDrive-Daten
 Der Adapter versucht die ConnectedDrive-Daten für die auf die angegebenen Benutzer registrierten Fahrzeuge.
 Man kann filtern welche Daten angezeigt werden indem man im Admin die Einstellungen für
-* zu verwendete services (ich verwende nur: efficiency, dynamic, navigation)
+* zu verwendete services (ich verwende nur: efficiency, dynamic, navigation und remote_execution)
 * zu löschende Einträge (Bei mir Daten wie: modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages)
-* Einträge die von Arrays umgewandelt werden sollen (bei mir: lastTripList|name|lastTrip|unit, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity)
+* Einträge die von Arrays umgewandelt werden sollen (bei mir: lastTripList|name|lastTrip, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity, remote_history|eventId). bestehen nur zwei einträge mit '|' getrennt dann ist der erste der name des arrays das umgewandelt wird und der zweite der Name des eintrags und es werden alle Sub-Elemente übernommen, wenn ein dritter wert vorhanden ist wird nur dieser als Wert übernommen.
 * Einträge die in ihrer Hirarchie nach oben wandern sollen (bei mir attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList)
 * der zu verwendete Datenserver kann auch angegeben werden, der Default ist für den Rest der Welt, wer in anderen Regionen wohnt kann auch <https://b2vapi.bmwgroup.cn:8592> für China, <https://b2vapi.bmwgroup.us> für USA und <https://b2vapi.bmwgroup.com> für Europe / Rest of World probieren. www.bmw-connecteddrive.com wird auf den letzten weitergeleitet.
 * Es kann angegeben werden ob alle alten Objekte bei einem Adapterneustart gelöscht werden sollen.  
 
 Wenn der Adapter die Position vom Navigationssystem auslesen kann übersetz er diese mit Hilfe von Google auf eine Adresse und gibt diese unter navigation.formatted_address an.
 
-### p.s.: Ich möchte <https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper> und <https://github.com/edent/BMW-i-Remote> für die Beispiele danken mittels derer ich dann den Zugriff programmieren konnte!
+p.s.: Ich möchte <https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper> und <https://github.com/edent/BMW-i-Remote> für die Beispiele danken mittels derer ich dann den Zugriff programmieren konnte!
 
 ## Important/Wichtig
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
+### 1.0.0
+* Changed remoteservises/chargingprofile to remote_chargingprofile
+* Added services remote_history and remote_execution
+* Changed to automatic deletion of states which are not anymore delivered
+* Removed Flag to delete all car data at start
+
 ### 0.2.2
 * Multiple cars did not work - resolved
 * Flag to delete all car data on adapter start included
@@ -41,11 +47,10 @@ Installieren über ioBroker.admin
 
 ## Configuration
 
-Der Benutzername, das Passwort und die Datenfilter müssen in Adapter config eingegeben werden.
+Der Benutzername, das Passwort und die Datenfilter müssen im Adapter config eingegeben werden.
 
 ### Todo for later revisions
 * Sprachunterstützung/übersetzung
-* Unterstützung der Units
 * Aktionen (Türen schließen, Klima anstellen, Abfahrt einstellen) durchführen
 
 ## Installation

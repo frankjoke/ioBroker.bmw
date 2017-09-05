@@ -19,6 +19,7 @@ const http = require('http');
 const https = require('https');
 const exec = require('child_process').exec;
 const querystring = require('querystring');
+const xml2js = require('xml2js');
 const assert = require('assert');
 
 
@@ -34,6 +35,10 @@ const A = { // my Adapter object encapsulating all my default adapter variables/
         A.scanTimer = null;
         if (adapter && adapter.log && adapter.log.warn)
             A.W(`Adapter disconnected and stopped with (${dostop})`);
+        if(dostop) {
+            A.E("Adapter will exit in lates 2 sec!");
+            setTimeout(process.exit,2000,55);
+        }
     },
 
     res: (what) => Promise.resolve(what),
@@ -215,6 +220,15 @@ const A = { // my Adapter object encapsulating all my default adapter variables/
             }).catch(err => A.W(`Error in adapter.ready: ${err}`));
     },
 
+    changeState: function (id, value, ack, always) {
+        assert(typeof id === 'string', 'changeState (id,,,) error: id is not a string!');
+        always = always === undefined ? false : !!always;
+        ack = ack === undefined ? true : !!ack;
+        return A.getState(id)
+            .then(st => st && !always && st.val == value && st.ack == ack ? A.res() : A.setState(id, value, ack))
+            .catch(err => A.W(`Error in A.setState(${id},${value},${ack}): ${err}`, A.setState(id, value, ack)));
+    },
+
     makeState: function (ido, value, ack) {
         ack = ack === undefined || !!ack;
         let id = ido;
@@ -226,7 +240,7 @@ const A = { // my Adapter object encapsulating all my default adapter variables/
             id = id.id;
         } else return Promise.reject(A.W(`Invalid makeState id: ${A.O(id)}`));
         if (A.states[id])
-            return A.setState(id, value, ack);
+            return A.changeState(id, value, ack);
         //    A.D(`Make State ${id} and set value to:${A.O(value)} ack:${ack}`) ///TC
         var st = {
             common: {
@@ -247,7 +261,7 @@ const A = { // my Adapter object encapsulating all my default adapter variables/
 
         return A.extendObject(id, st, null)
             .then(x => A.states[id] = x)
-            .then(() => st.common.state == 'state' ? A.setState(id, value, ack) : A.res())
+            .then(() => st.common.state == 'state' ? A.changeState(id, value, ack) : A.res())
             .catch(err => A.D(`MS ${A.O(err)}`, id));
     },
 
@@ -255,17 +269,20 @@ const A = { // my Adapter object encapsulating all my default adapter variables/
         if (obj && obj.command) {
             A.D(`process Message ${A.O(obj)}`);
             switch (obj.command) {
-                case 'ping':
-                    { // Try to connect to mqtt broker
-                        if (obj.callback && obj.message) {
-                            ping.probe(obj.message, {
-                                log: adapter.log.debug
-                            }, function (err, result) {
-                                adapter.sendTo(obj.from, obj.command, res, obj.callback);
-                            });
-                        }
-                        break;
+                case 'ping': // Try to connect to mqtt broker
+                    if (obj.callback && obj.message) {
+                        ping.probe(obj.message, {
+                            log: adapter.log.debug
+                        }, function (err, result) {
+                            adapter.sendTo(obj.from, obj.command, res, obj.callback);
+                        });
                     }
+                    break;
+                case 'send': // e.g. send email or pushover or whatever
+                    A.D(A.ains + ' send command from message');
+                    if (obj.callback) // Send response in callback if required
+                        adapter.sendTo(obj.from, obj.command, 'Message received', obj.callback);
+                    break;
             }
         }
         adapter.getMessage((err, obj) => obj ? A.processMessage(obj) : null);
@@ -295,6 +312,9 @@ function BMWrequest(_host, _path, _postData) {
 
         if (typeof (token.token) === "string" && token.token.length > 0) {
             options.headers.Authorization = token.tokenType + " " + token.token;
+        } else {
+            options.headers.Accept = 'application/json, text/plain, */*';
+            options.headers['User-Agent'] = "MCVApp/1.5.2 (iPhone; iOS 9.1; Scale/2.00)";
         }
 
         //	A.D("Calling " + options.hostname + options.path);
@@ -308,7 +328,7 @@ function BMWrequest(_host, _path, _postData) {
 
             res.on('data', (chunk) => data += chunk);
             res.on('end', () => _res({
-                data: data,
+                data: data.trim(),
                 headers: res.headers
             }));
         });
@@ -405,24 +425,57 @@ function BMWinitialize() {
 
 var vehicles = {};
 
+function xmlParseString(body) {
+    function parseNumbers(str) {
+        if (!isNaN(str))
+            str = str % 1 === 0 ? parseInt(str) : parseFloat(str);
+        return str;
+    }
+
+    function tagnames(item) {
+        let all = item.split(':');
+        item = (all.length === 2) ? all[1] : all[0];
+        //            _I(`Tag: all: ${_O(all)} became ${item}`);                
+        return item;
+    }
+    return (A.c2p(new xml2js.Parser({
+            explicitArray: false,
+            trim: true,
+            tagNameProcessors: [tagnames],
+            //                attrNameProcessors: [tagnames],
+            valueProcessors: [parseNumbers]
+        })
+        .parseString))(body);
+}
+
 function requestVehicle(_rootData) {
     var carData = _rootData;
 
     function requestVehicleData(_type) {
-        return BMWrequest(adapter.config.server, '/api/vehicle/' + _type + '/v1/' + carData.vin)
-            .then(res => JSON.parse(res.data))
-            .then(res => res.error ? res.error_description : (carData[_type.split('/').slice(-1)[0]] = A.D(A.O(res), res)));
+        let tres = null,
+            end = '',
+            nam = _type.split('/').join('_');
+
+        switch (_type) {
+            case 'remote_chargingprofile':
+                _type = 'remoteservices/chargingprofile';
+                break;
+            case 'remote_history':
+                _type = 'remoteservices';
+                end = '/history';
+                break;
+            case 'remote_execution':
+                _type = 'remoteservices';
+                end = '/state/execution';
+                break;
+        }
+        return BMWrequest(adapter.config.server, `/api/vehicle/${_type}/v1/${carData.vin}${end}`)
+            .then(res => tres = res.data)
+            .then(res => res.startsWith('<') ? xmlParseString(res) : JSON.parse(res))
+            .then(res => res.error ? res.error_description : (carData[nam] = res))
+            .catch(e => A.W(`RequestServiceData Error ${e} for ${_type+end} with result: ${A.O(tres)}`, A.res()));
     }
 
-    /*
-    https://www.bmw-connecteddrive.de/api/vehicle/service/v1/vin
-    https://www.bmw-connecteddrive.de/api/vehicle/dynamic/v1/vin?offset=-120
-    https://www.bmw-connecteddrive.de/api/vehicle/specs/v1/vin
-    https://www.bmw-connecteddrive.de/api/vehicle/navigation/v1/vin
-    https://www.bmw-connecteddrive.de/api/vehicle/efficiency/v1/vin
-    https://www.bmw-connecteddrive.de/api/vehicle/remoteservices/chargingprofile/v1/vin
-    https://www.bmw-connecteddrive.de/api/vehicle/servicepartner/v1/vin
-    */
     return Promise.all(adapter.config.services.split(',').map(x => x.trim()).map(requestVehicleData, this))
         .then(() => convert(carData))
         .then(car => vehicles[carData.vin] = A.I(`Car ${carData.vin} with ${Object.keys(car).length} data points received`, car))
@@ -447,6 +500,7 @@ function convert(car) {
         });
 
     function convObj(obj, namelist, last) {
+        //        A.D(`confObj ${namelist}(${last}):${A.O(obj,1)}`)
         if (A.T(obj) == 'array') {
             if (obj.length > 0 && A.T(obj[0]) != 'object')
                 obj = obj.join(', ');
@@ -457,7 +511,13 @@ function convert(car) {
                     for (let j of obj) {
                         let n = j[m[0]];
                         if (!dell.includes(n))
-                            convObj(j[m[1]], flat.includes(n) ? namelist : ((namelist != '' ? namelist + '.' : '') + n), n)
+                            if (m.length == 1) {
+                                delete j[m[0]];
+                                n = n.split('@')[0];
+                                convObj(j, (namelist != '' ? namelist + '.' : '') + n, n);
+                            } else
+                                convObj(j[m[1]], flat.includes(n) ? namelist : ((namelist != '' ? namelist + '.' : '') + n), n);
+
                     }
                     return;
                 }
@@ -491,33 +551,15 @@ var wlast = null,
     lang = '',
     dataList = {};
 
-
 function getCars() {
     dataList = {};
+    A.states = {};
     return requestVehicles()
         .then(() => A.series(Object.keys(vehicles),
             car => A.series(Object.keys(vehicles[car]),
                 id => A.makeState(A.D(`${ car+'.'+id}: ${vehicles[car][id]}`, car + '.' + id),
-                    vehicles[car][id], true), 1)));
-}
-
-function main() {
-    if (!adapter.config.scandelay || parseInt(adapter.config.scandelay) < 5)
-        A.W(`BMW Adapter scan delay was ${adapter.config.scandelay} set to 5 min!`, adapter.config.scandelay = 5);
-    A.scanDelay = parseInt(adapter.config.scandelay) * 60 * 1000; // minutes
-
-    adapter.config.server = A.T(adapter.config.server) == 'string' && adapter.config.server.length>10 ? adapter.config.server :   'www.bmw-connecteddrive.com';
-    
-    A.I(`BMW set to scan data on ConnectedDrive every ${adapter.config.scandelay} minutes.`);
-
-    A.wait(100)  // just wait a bit to give other background a chance to complete as well.
-        .then(() => BMWinitialize())
-        .then(x => A.D(`Initialized, client_id= ${A.O(token)}`))
-        .then(res => { // everything fine, start timer and get gar data first time
-            A.scanTimer = setInterval(getCars, A.scanDelay);
-            return getCars(); // scan first time and generate states if they do not exist yet
-        })
-        .then(res => A.getObjectList({  // this check object list for old objects not transmitted anymore
+                    vehicles[car][id], true), 1)))
+        .then(res => A.getObjectList({ // this check object list for old objects not transmitted anymore
             startkey: A.ain,
             endkey: A.ain + '\u9999'
         }))
@@ -528,7 +570,25 @@ function main() {
             A.I(`Delete unneeded ${A.O(item)}`);
             return A.removeState(id);
         }, 2))
+        .catch(err => A.W(`Error in GetCars : ${err}`));
+}
 
+function main() {
+    if (!adapter.config.scandelay || parseInt(adapter.config.scandelay) < 5)
+        A.W(`BMW Adapter scan delay was ${adapter.config.scandelay} set to 5 min!`, adapter.config.scandelay = 5);
+    A.scanDelay = parseInt(adapter.config.scandelay) * 60 * 1000; // minutes
+
+    adapter.config.server = A.T(adapter.config.server) == 'string' && adapter.config.server.length > 10 ? adapter.config.server : 'www.bmw-connecteddrive.com';
+
+    A.I(`BMW scan ConnectedDrive every ${adapter.config.scandelay} minutes for the services ${adapter.config.services}.`);
+
+    A.wait(100) // just wait a bit to give other background a chance to complete as well.
+        .then(() => BMWinitialize())
+        .then(x => A.D(`Initialized, client_id= ${A.O(token)}`))
+        .then(res => { // everything fine, start timer and get gar data first time
+            A.scanTimer = setInterval(getCars, A.scanDelay);
+            return getCars(); // scan first time and generate states if they do not exist yet
+        })
         .catch(err => {
             A.W(`BMW initialization finished with error ${A.O(err)}, will stop adapter!`);
             stop(true);
