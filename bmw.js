@@ -5,20 +5,19 @@
  */
 // jshint node:true, esversion:6, strict:global, undef:true, unused:true
 "use strict";
-const utils = require(__dirname + '/lib/utils'); // Get common adapter utils
+const utils = require('./lib/utils'); // Get common adapter utils
 const adapter = utils.adapter('bmw');
-const MyAdapter = require(__dirname + '/myAdapter');
-const BMWConnectedDrive = require(__dirname + '/connectedDrive');
+const MyAdapter = require('./myAdapter');
+const BMWConnectedDrive = require('./connectedDrive');
 
 const A = new MyAdapter(adapter);
+const bmw = new BMWConnectedDrive(A);
 
 adapter.on('message', obj => A.processMessage(obj));
 adapter.on('ready', () => A.initAdapter().then(() => main()));
 adapter.on('unload', () => A.stop(false));
 
 function main() {
-    let bmw = new BMWConnectedDrive(A);
-
     function getCars() {
         let states = {};
         return bmw.requestVehicles()
