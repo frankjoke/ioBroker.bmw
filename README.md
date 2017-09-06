@@ -1,10 +1,8 @@
 # ![Logo](admin/bmw.png) Adapter für BMW ConnectedDrive-Daten
-
 [![NPM version](http://img.shields.io/npm/v/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 **Tests:** Linux/Mac: [![Travis-CI](http://img.shields.io/travis/frankjoke/iobroker.bmw/master.svg)](https://travis-ci.org/frankjoke/iobroker.bmw)
 Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjoke/iobroker.bmw?branch=master&svg=true)](https://ci.appveyor.com/project/frankjoke/ioBroker-bmw/)
-
 [![NPM](https://nodei.co/npm/iobroker.bmw.png?downloads=true)](https://nodei.co/npm/iobroker.bmw/)
 ==============
 ### Adapter zum Auslesen von BMW ConnectedDrive-Daten
@@ -25,6 +23,10 @@ p.s.: Ich möchte <https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper> 
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
+### 1.0.1
+* Changed name of email to username in config not to conflict with other data and services
+* Removed the dependency on 'xml2js' module
+
 ### 1.0.0
 * Changed remoteservises/chargingprofile to remote_chargingprofile
 * Added services remote_history and remote_execution
