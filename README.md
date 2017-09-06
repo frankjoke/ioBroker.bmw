@@ -1,4 +1,5 @@
 # ![Logo](admin/bmw.png) Adapter für BMW ConnectedDrive-Daten
+
 [![NPM version](http://img.shields.io/npm/v/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 **Tests:** Linux/Mac: [![Travis-CI](http://img.shields.io/travis/frankjoke/iobroker.bmw/master.svg)](https://travis-ci.org/frankjoke/iobroker.bmw)
@@ -9,7 +10,7 @@ Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjo
 Der Adapter versucht die ConnectedDrive-Daten für die auf die angegebenen Benutzer registrierten Fahrzeuge.
 Man kann filtern welche Daten angezeigt werden indem man im Admin die Einstellungen für
 
-* zu verwendete services (ich verwende nur: efficiency, dynamic, navigation und remote_execution). Wenn man 'debug!' am anfang schreibt wird der Adapter im Log die debug-Ausgaben einschalten und damit sieht man welche Daten er abfragt und geliefert bekommt.
+* zu verwendete services (ich verwende nur: efficiency, dynamic, navigation und remote_execution). Wenn man 'debug!' am anfang schreibt wird der Adapter im Log die debug-Ausgaben einschalten und damit sieht man welche Daten er abfragt und geliefert bekommt. Adapter muss im admin auf 'info' stehen!
 * zu löschende Einträge (Bei mir Daten wie: modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages)
 * Einträge die von Arrays umgewandelt werden sollen (bei mir: lastTripList|name|lastTrip, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity, remote_history|eventId). bestehen nur zwei einträge mit '|' getrennt dann ist der erste der name des arrays das umgewandelt wird und der zweite der Name des eintrags und es werden alle Sub-Elemente übernommen, wenn ein dritter wert vorhanden ist wird nur dieser als Wert übernommen.
 * Einträge die in ihrer Hirarchie nach oben wandern sollen (bei mir attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList)
