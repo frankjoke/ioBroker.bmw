@@ -104,7 +104,7 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
                 return _rej(json.error + ": " + json.error_description);
 
             if (typeof (json.token_type) === 'undefined' || typeof (json.access_token) === 'undefined')
-                return _rej("Couldn't find token in response");
+                return _rej("Couldn't get token, seems to be wrong username/password error!");
 
             that._tokenType = json.token_type;
             that._token = json.access_token;
