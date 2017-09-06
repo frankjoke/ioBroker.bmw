@@ -1,7 +1,7 @@
 {
   "name": "iobroker.bmw",
   "description": "ioBroker adapter to read BMW ConnectedDrive data",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "author": "frankjoke <frankjoke@hotmail.com>",
   "contributors": [
     "frankjoke <frankjoke@hotmail.com>"

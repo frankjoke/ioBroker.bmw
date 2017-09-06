@@ -90,8 +90,8 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
         });
 
         return request('customer.bmwgroup.com', '/gcdm/oauth/authenticate', postData)
-            .then(res => res.headers.location === undefined || res.headers.location === 'undefined' ? 
-                A.rej(`unexpected response, location header not defined: ${A.O(res.headers)}`) :
+            .then(res => res.headers.location === undefined || res.headers.location === 'undefined' ?
+                Promise.reject(`unexpected response, location header not defined: ${A.O(res.headers)}`) :
                 JSON.stringify(querystring.parse(res.headers.location), null, 4))
             .then(res => readTokenData(res));
     }
@@ -165,7 +165,7 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
             return request(that._server, `/api/vehicle/${_type}/v1/${carData.vin}${end}`)
                 .then(res => JSON.parse(tres = res.data))
                 .then(res => res.error ? res.error_description : (carData[nam] = res))
-                .catch(e => A.W(`RequestServiceData Error ${e} for ${_type+end} with result: ${A.O(tres)}`, A.res()));
+                .catch(e => A.W(`RequestServiceData Error ${e} for ${_type+end} with result: ${A.O(tres)}`, Promise.resolve()));
         }
 
         return Promise.all(that._services.split(',').map(x => x.trim()).map(requestVehicleData, that))
@@ -225,7 +225,7 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
 
         return (car.navigation && car.navigation.latitude && car.navigation.longitude ?
                 A.get(`http://maps.googleapis.com/maps/api/geocode/json?latlng=${car.navigation.latitude},${car.navigation.longitude}&sensor=true`) :
-                A.res({}))
+                Promise.resolve({}))
             .then(res => {
                 res = JSON.parse(res);
                 if (car.navigation && res && res.results && res.results[0] && res.results[0].formatted_address)
@@ -236,55 +236,34 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
             .catch(err => A.W(`Error in covert car data: ${err}`, list));
     }
 
-    that.toString = function () {
-        return `BMWConnectedDrive(${that._username},${that._server})=${that._token}`;
-    };
+    that.toString = () => `BMWConnectedDrive(${that._username},${that._server})=${that._token}`;
+
     Object.defineProperty(BMWConnectedDrive.prototype, "services", {
-        get: function () {
-            return this._services;
-        },
-        set: function (y) {
-            this._services = y || this._services;
-        }
+        get: () => this._services,
+        set: (y) => this._services = y || this._services,
     });
 
     Object.defineProperty(BMWConnectedDrive.prototype, "delete", {
-        get: function () {
-            return this._delete;
-        },
-        set: function (y) {
-            this._delete = y || this._delete;
-        }
+        get: () => this._delete,
+        set: (y) => this._delete = y || this._delete,
     });
 
     Object.defineProperty(BMWConnectedDrive.prototype, "flatten", {
-        get: function () {
-            return this._flatten;
-        },
-        set: function (y) {
-            this._flatten = y || this._flatten;
-        }
+        get: () => this._flatten,
+        set: (y) => this._flatten = y || this._flatten,
     });
 
     Object.defineProperty(BMWConnectedDrive.prototype, "arrays", {
-        get: function () {
-            return this._arrays;
-        },
-        set: function (y) {
-            this._arrays = y || this._arrays;
-        }
+        get: () => this._arrays,
+        set: (y) => this._arrays = y || this._arrays,
     });
 
     Object.defineProperty(BMWConnectedDrive.prototype, "vehicles", {
-        get: function () {
-            return this._vehicles;
-        },
+        get: () => this._vehicles
     });
 
     Object.defineProperty(BMWConnectedDrive.prototype, "token", {
-        get: function () {
-            return this._token;
-        },
+        get: () => this._token
     });
 
     return this;
