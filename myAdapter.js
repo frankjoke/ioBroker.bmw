@@ -155,15 +155,15 @@ function MyAdapter(ori_adapter, main, message) {
         that.getState = that.c2p(adapter.getState);
         that.setState = that.c2p(adapter.setState);
         that.getObject = that.c2p(adapter.getObject);
-        that.deleteState = (id) => that.c1pe(adapter.deleteState)(id).catch(res => res == 'Not exists' ? that.res() : that.rej(res));
-        that.delState = (id, opt) => that.c1pe(adapter.delState)(id, opt).catch(res => res == 'Not exists' ? that.res() : that.rej(res));
-        that.delObject = (id, opt) => that.c1pe(adapter.delObject)(id, opt).catch(res => res == 'Not exists' ? that.res() : that.rej(res));
+        that.deleteState = (id) => that.c1pe(adapter.deleteState)(id).catch(res => res == 'Not exists' ? Promise.resolve() : Promise.reject(res));
+        that.delState = (id, opt) => that.c1pe(adapter.delState)(id, opt).catch(res => res == 'Not exists' ? Promise.resolve() : Promise.reject(res));
+        that.delObject = (id, opt) => that.c1pe(adapter.delObject)(id, opt).catch(res => res == 'Not exists' ? Promise.resolve() : Promise.reject(res));
         that.removeState = (id, opt) => that.delState(id, opt).then(() => that.delObject((delete that.states[id], id), opt));
         that.setObject = that.c2p(adapter.setObject);
         that.createState = that.c2p(adapter.createState);
         that.extendObject = that.c2p(adapter.extendObject);
         return (!adapter.config.forceinit ?
-                that.res({
+                Promise.resolve({
                     rows: []
                 }) :
                 that.getObjectList({
@@ -201,7 +201,7 @@ function MyAdapter(ori_adapter, main, message) {
         always = always === undefined ? false : !!always;
         ack = ack === undefined ? true : !!ack;
         return that.getState(id)
-            .then(st => st && !always && st.val == value && st.ack == ack ? that.res() : that.setState(id, value, ack))
+            .then(st => st && !always && st.val == value && st.ack == ack ? Promise.resolve() : that.setState(id, value, ack))
             .catch(err => that.W(`Error in that.setState(${id},${value},${ack}): ${err}`, that.setState(id, value, ack)));
     };
 
@@ -237,14 +237,14 @@ function MyAdapter(ori_adapter, main, message) {
         //        that.I(`will create state:${id} with ${that.O(st)}`);
         return that.extendObject(id, st, null)
             .then(x => that.states[id] = x)
-            .then(() => st.common.state == 'state' ? that.changeState(id, value, ack) : that.res())
+            .then(() => st.common.state == 'state' ? that.changeState(id, value, ack) : Promise.resolve())
             .catch(err => that.D(`MS ${that.O(err)}`, id));
     };
 
     that.processMessage = (obj) => {
         (obj && obj.command ?
             that._message(obj) :
-            that.res(that._message(that.W(`invalid Message ${obj}`, obj))))
+            Promise.resolve(that._message(that.W(`invalid Message ${obj}`, obj))))
         .then(res => that.c2p(adapter.getMessage)().then(obj => obj ? that.processMessage(obj) : res));
     };
 
