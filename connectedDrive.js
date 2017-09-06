@@ -128,7 +128,7 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
     }
 
     that.initialize = function (options) {
-        A.D(`Initialized, client_id= ${A.O(options)}`);
+        A.D(`Initialize for server ${options.server}`);
         assert(typeof options === 'object', 'initialize BMW with an object containing server,');
         that._server = options.server || that._server;
         that._password = options.password || that._password;
@@ -138,7 +138,8 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
         that._flatten = options.flatten || that._flatten;
         that._arrays = options.arrays || that._arrays;
         return requestToken()
-            .then(() => A.D(`Initialized, client_id= ${A.O(that._token)}`));
+            .then(() => A.D(`Initialized, client_id= ${A.O(that._token)}`))
+            .catch(() => A.D(`Initialized, client_id= ${A.O(that._token)}`));
     };
 
     function requestVehicle(_rootData) {

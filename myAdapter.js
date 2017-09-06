@@ -11,7 +11,6 @@ const https = require('https');
 const exec = require('child_process').exec;
 const assert = require('assert');
 
-
 function MyAdapter(ori_adapter, main, message) {
     if (!(this instanceof MyAdapter)) return new MyAdapter(ori_adapter, main, message);
     let adapter = ori_adapter,
@@ -263,9 +262,9 @@ function MyAdapter(ori_adapter, main, message) {
     adapter.on('unload', () => that.stop(false));
     adapter.on('ready', () => that.initAdapter().then(() => that._main()));
     adapter.on('stateChange', function (id, state) {
-        
+
         if (state && state.from != 'system.adapter.' + that.ains && that._stateChange)
-            return that._stateChange(that.D(`stateChange called for${id} = ${that.O(state)}`,id), state);
+            return that._stateChange(that.D(`stateChange called for${id} = ${that.O(state)}`, id), state);
     });
 
     Object.defineProperty(MyAdapter.prototype, "stateChange", {
