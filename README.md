@@ -1,4 +1,5 @@
 # ![Logo](admin/bmw.png) Adapter für BMW ConnectedDrive-Daten
+
 [![NPM version](http://img.shields.io/npm/v/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 **Tests:** Linux/Mac: [![Travis-CI](http://img.shields.io/travis/frankjoke/iobroker.bmw/master.svg)](https://travis-ci.org/frankjoke/iobroker.bmw)
@@ -8,21 +9,28 @@ Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjo
 ### Adapter zum Auslesen von BMW ConnectedDrive-Daten
 Der Adapter versucht die ConnectedDrive-Daten für die auf die angegebenen Benutzer registrierten Fahrzeuge.
 Man kann filtern welche Daten angezeigt werden indem man im Admin die Einstellungen für
-* zu verwendete services (ich verwende nur: efficiency, dynamic, navigation und remote_execution)
+
+* zu verwendete services (ich verwende nur: efficiency, dynamic, navigation und remote_execution). Wenn man 'debug!' am anfang schreibt wird der Adapter im Log die debug-Ausgaben einschalten und damit sieht man welche Daten er abfragt und geliefert bekommt. Adapter muss im admin auf 'info' stehen!
 * zu löschende Einträge (Bei mir Daten wie: modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages)
 * Einträge die von Arrays umgewandelt werden sollen (bei mir: lastTripList|name|lastTrip, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity, remote_history|eventId). bestehen nur zwei einträge mit '|' getrennt dann ist der erste der name des arrays das umgewandelt wird und der zweite der Name des eintrags und es werden alle Sub-Elemente übernommen, wenn ein dritter wert vorhanden ist wird nur dieser als Wert übernommen.
 * Einträge die in ihrer Hirarchie nach oben wandern sollen (bei mir attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList)
-* der zu verwendete Datenserver kann auch angegeben werden, der Default ist für den Rest der Welt, wer in anderen Regionen wohnt kann auch <https://b2vapi.bmwgroup.cn:8592> für China, <https://b2vapi.bmwgroup.us> für USA und <https://b2vapi.bmwgroup.com> für Europe / Rest of World probieren. www.bmw-connecteddrive.com wird auf den letzten weitergeleitet.
-* Es kann angegeben werden ob alle alten Objekte bei einem Adapterneustart gelöscht werden sollen.  
+* der zu verwendete Datenserver kann auch angegeben werden, der Default ist für den Rest der Welt, wer in anderen Regionen wohnt kann auch <https://b2vapi.bmwgroup.cn:8592> für China, <https://b2vapi.bmwgroup.us> für USA und <https://b2vapi.bmwgroup.com> für Europe / Rest of World probieren. www.bmw-connecteddrive.com wird hoffentlich immer auf den richtigen weitergeleitet.
+* Es kann angegeben werden ob alle alten Objekte bei einem Adapterneustart gelöscht werden sollen.
 
 Wenn der Adapter die Position vom Navigationssystem auslesen kann übersetz er diese mit Hilfe von Google auf eine Adresse und gibt diese unter navigation.formatted_address an.
 
-p.s.: Ich möchte <https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper> und <https://github.com/edent/BMW-i-Remote> für die Beispiele danken mittels derer ich dann den Zugriff programmieren konnte!
+Ein spezieller '_RefresData'-State wird angelegt auf welchen man im admin.object klicken kann oder welchen man über Vis/oder andere Programme ansteuern kann.
+
+p.s.: Ich möchte <https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper> und <https://github.com/edent/BMW-i-Remote> für die Beispiele danken mittels derer sources ich den Zugriff geschafft habe!
 
 ## Important/Wichtig
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
+### 1.1.0
+* Added _RefreshData - State which can be used to start a refresh cycle manually (for example from admin.objects)
+* Added 'debug'-mode when you start services config string with 'debug!'
+
 ### 1.0.1
 * Changed name of email to username in config not to conflict with other data and services
 * Removed the dependency on 'xml2js' module

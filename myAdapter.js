@@ -11,23 +11,24 @@ const https = require('https');
 const exec = require('child_process').exec;
 const assert = require('assert');
 
-
-function MyAdapter(ori_adapter) {
+function MyAdapter(ori_adapter, main, message) {
+    if (!(this instanceof MyAdapter)) return new MyAdapter(ori_adapter, main, message);
     let adapter = ori_adapter,
         that = this;
 
     assert(adapter && adapter.name, 'myAdapter:(adapter) no adapter here!');
 
-    that.res = (what) => Promise.resolve(what);
-    that.rej = (what) => Promise.reject(what);
+    that._main = typeof main === 'function' ? main : () => that.W(`No 'main() defined!`);
+    that._message = typeof message === 'function' ? message : (mes) => that.W(`Message ${that.O(mes)} received and not handled!`);
+    that._stopping = false;
+    that._timer = null;
+    that._debug = false;
+
     that.wait = (time, arg) => new Promise(res => setTimeout(res, time, arg));
 
     that.O = (obj, level) => util.inspect(obj, false, level || 2, false).replace(/\n/g, ' ');
-
-    // function _J(str) { try { return JSON.parse(str); } catch (e) { return {'error':'JSON Parse Error of:'+str}}} 
     that.N = (fun) => setTimeout.apply(null, [fun, 0].concat(Array.prototype.slice.call(arguments, 1))); // move fun to next schedule keeping arguments
-    that.D = (l, v) => (adapter.log.debug(l), v === undefined ? l : v);
-//    that.D = (str, val) => (adapter.log.info(`<span style="color:darkblue;">debug: ${str}</span>`), val !== undefined ? val : str); // Write debug message in log, optionally return 2nd argument
+    that.D = (str, val) => ((that._debug ? adapter.log.info : adapter.log.debug)(that._debug ? `<span style="color:darkblue;">debug: ${str}</span>` : str), val !== undefined ? val : str);
     that.I = (l, v) => (adapter.log.info(l), v === undefined ? l : v);
     that.W = (l, v) => (adapter.log.warn(l), v === undefined ? l : v);
     that.E = (l, v) => (adapter.log.error(l), v === undefined ? l : v);
@@ -153,15 +154,15 @@ function MyAdapter(ori_adapter) {
         that.getState = that.c2p(adapter.getState);
         that.setState = that.c2p(adapter.setState);
         that.getObject = that.c2p(adapter.getObject);
-        that.deleteState = (id) => that.c1pe(adapter.deleteState)(id).catch(res => res == 'Not exists' ? that.res() : that.rej(res));
-        that.delState = (id, opt) => that.c1pe(adapter.delState)(id, opt).catch(res => res == 'Not exists' ? that.res() : that.rej(res));
-        that.delObject = (id, opt) => that.c1pe(adapter.delObject)(id, opt).catch(res => res == 'Not exists' ? that.res() : that.rej(res));
-        that.removeState = (id, opt) => that.delState(id, opt).then(() => that.delObject((delete that.states[id],id), opt));
+        that.deleteState = (id) => that.c1pe(adapter.deleteState)(id).catch(res => res == 'Not exists' ? Promise.resolve() : Promise.reject(res));
+        that.delState = (id, opt) => that.c1pe(adapter.delState)(id, opt).catch(res => res == 'Not exists' ? Promise.resolve() : Promise.reject(res));
+        that.delObject = (id, opt) => that.c1pe(adapter.delObject)(id, opt).catch(res => res == 'Not exists' ? Promise.resolve() : Promise.reject(res));
+        that.removeState = (id, opt) => that.delState(id, opt).then(() => that.delObject((delete that.states[id], id), opt));
         that.setObject = that.c2p(adapter.setObject);
         that.createState = that.c2p(adapter.createState);
         that.extendObject = that.c2p(adapter.extendObject);
         return (!adapter.config.forceinit ?
-                that.res({
+                Promise.resolve({
                     rows: []
                 }) :
                 that.getObjectList({
@@ -199,7 +200,7 @@ function MyAdapter(ori_adapter) {
         always = always === undefined ? false : !!always;
         ack = ack === undefined ? true : !!ack;
         return that.getState(id)
-            .then(st => st && !always && st.val == value && st.ack == ack ? that.res() : that.setState(id, value, ack))
+            .then(st => st && !always && st.val == value && st.ack == ack ? Promise.resolve() : that.setState(id, value, ack))
             .catch(err => that.W(`Error in that.setState(${id},${value},${ack}): ${err}`, that.setState(id, value, ack)));
     };
 
@@ -232,54 +233,49 @@ function MyAdapter(ori_adapter) {
         for (let i in ido)
             if (i != 'id' && i != 'val')
                 st.common[i] = ido[i];
-
+        //        that.I(`will create state:${id} with ${that.O(st)}`);
         return that.extendObject(id, st, null)
             .then(x => that.states[id] = x)
-            .then(() => st.common.state == 'state' ? that.changeState(id, value, ack) : that.res())
+            .then(() => st.common.state == 'state' ? that.changeState(id, value, ack) : Promise.resolve())
             .catch(err => that.D(`MS ${that.O(err)}`, id));
     };
 
     that.processMessage = (obj) => {
-        if (obj && obj.command) {
-            switch (obj.command) {
-                /*
-                                case 'ping': // Try to connect to mqtt broker
-                                    if (obj.callback && obj.message) {
-                                        ping.probe(obj.message, {
-                                            log: adapter.log.debug
-                                        }, function (err, result) {
-                                            adapter.sendTo(obj.from, obj.command, res, obj.callback);
-                                        });
-                                    }
-                                    break;
-                                case 'send': // e.g. send email or pushover or whatever
-                                    that.D(that.ains + ' send command from message');
-                                    if (obj.callback) // Send response in callback if required
-                                        adapter.sendTo(obj.from, obj.command, 'Message received', obj.callback);
-                                    break;
-                */
-                default:
-                    that.W(`Unkhandled Message ${that.O(obj)}`);
-            }
-        }
-        adapter.getMessage((err, obj) => obj ? that.processMessage(obj) : null);
+        (obj && obj.command ?
+            that._message(obj) :
+            Promise.resolve(that._message(that.W(`invalid Message ${obj}`, obj))))
+        .then(res => that.c2p(adapter.getMessage)().then(obj => obj ? that.processMessage(obj) : res));
     };
-
-    that.isStopping = false;
-    that.scanTimer = null;
 
     that.stop = (dostop) => {
-        that.isStopping = true;
-        if (that.scanTimer)
-            clearInterval(that.scanTimer);
-        that.scanTimer = null;
+        that._stopping = true;
+        if (that._timer)
+            clearInterval(that._timer);
+        that._timer = null;
         if (adapter && adapter.log && adapter.log.warn)
             that.W(`Adapter disconnected and stopped with (${dostop})`);
-        if (dostop) {
-            that.E("Adapter will exit in lates 2 sec!");
-            setTimeout(process.exit, 2000, 55);
-        }
+        if (dostop)
+            that.E("Adapter will exit in lates 2 sec!", setTimeout(process.exit, 2000, 55));
     };
+
+    adapter.on('message', (obj) => that.processMessage(that.I(`received Message ${that.O(obj)}`, obj)));
+    adapter.on('unload', () => that.stop(false));
+    adapter.on('ready', () => that.initAdapter().then(() => that._main()));
+    adapter.on('stateChange', function (id, state) {
+
+        if (state && state.from != 'system.adapter.' + that.ains && that._stateChange)
+            return that._stateChange(that.D(`stateChange called for${id} = ${that.O(state)}`, id), state);
+    });
+
+    Object.defineProperty(MyAdapter.prototype, "stateChange", {
+        get: () => this._stateChange,
+        set: (y) => this._stateChange = y,
+    });
+
+    Object.defineProperty(MyAdapter.prototype, "debug", {
+        get: () => this._debug,
+        set: (y) => this._debug = y,
+    });
 
     return this;
 }
