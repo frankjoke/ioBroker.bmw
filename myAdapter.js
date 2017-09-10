@@ -247,29 +247,34 @@ function MyAdapter(ori_adapter, main, message) {
         .then(res => that.c2p(adapter.getMessage)().then(obj => obj ? that.processMessage(obj) : res));
     };
 
-    that.stop = (dostop) => {
+    that.stop = (dostop, callback) => {
         that._stopping = true;
         if (that._timer)
             clearInterval(that._timer);
         that._timer = null;
         if (adapter && adapter.log && adapter.log.warn)
-            that.W(`Adapter disconnected and stopped with (${dostop})`);
-        if (dostop)
-            that.E("Adapter will exit in lates 2 sec!", setTimeout(process.exit, 2000, 55));
+            that.D(`Adapter disconnected and stopped with dostop(${dostop}) and callback(${!!callback})`);
+        (that._unload ? that._unload(dostop) : Promise.resolve())
+            .then(() => callback && callback())
+            .catch(() => that.W('catch stop.'))
+            .then(() => dostop ? that.E("Adapter will exit in lates 2 sec!", setTimeout(process.exit, 2000, 55)) : null);
     };
 
-    adapter.on('message', (obj) => that.processMessage(that.I(`received Message ${that.O(obj)}`, obj)));
-    adapter.on('unload', () => that.stop(false));
-    adapter.on('ready', () => that.initAdapter().then(() => that._main()));
-    adapter.on('stateChange', function (id, state) {
-
-        if (state && state.from != 'system.adapter.' + that.ains && that._stateChange)
-            return that._stateChange(that.D(`stateChange called for${id} = ${that.O(state)}`, id), state);
-    });
+    adapter.on('message', (obj) => that.processMessage(that.I(`received Message ${that.O(obj)}`, obj)))
+        .on('unload', (callback) => that.stop(false, callback))
+        .on('ready', () => that.initAdapter().then(() => that._main()))
+        .on('objectChange', (id, obj) => that.D(`objectChange of "${id}": ${that.O(obj)}`))
+        .on('stateChange',  (id, state) => state && state.from != 'system.adapter.' + that.ains && that._stateChange ?
+            that._stateChange(that.D(`stateChange called for${id} = ${that.O(state)}`, id), state) : null);
 
     Object.defineProperty(MyAdapter.prototype, "stateChange", {
         get: () => this._stateChange,
-        set: (y) => this._stateChange = y,
+        set: (y) => this._stateChange = (assert(typeof y === 'function','Eoor: Statechange not a function!'),y)
+    });
+
+    Object.defineProperty(MyAdapter.prototype, "unload", {
+        get: () => this._unload,
+        set: (y) => this._unload = (assert(typeof y === 'function','Eoor: unload not a function!'),y)
     });
 
     Object.defineProperty(MyAdapter.prototype, "debug", {
