@@ -31,7 +31,7 @@ p.s.: Ich möchte <https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper> 
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
-### 1.2.0
+### 1.2.0 Test
 * Remoteservice implemented, basic functions like lock/unlock door or flash lights can be executed  
 * New services **store** and **map_download** added, this adds also **update** and **storePortfolio** in flatten and **storePortfolio|offerCode** in arrays.
 * If ConnectedDrive returns numbers as strings then they are converted to javascript numbers
