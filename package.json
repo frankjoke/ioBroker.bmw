@@ -6,7 +6,7 @@
   "contributors": [
     "frankjoke <frankjoke@hotmail.com>"
   ],
-  "homepage": "https://github.com/frankjoke/iobroker.bmw",
+  "homepage": "https://github.com/frankjoke/ioBroker.bmw",
   "license": "MIT",
   "keywords": [
     "iobroker",
@@ -15,7 +15,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/frankjoke/iobroker.bmw.git"
+    "url": "git+https://github.com/frankjoke/ioBroker.bmw.git"
   },
   "devDependencies": {
     "chai": "^3.4.1",
@@ -27,7 +27,7 @@
     "mocha": "^2.3.4"
   },
   "bugs": {
-    "url": "https://github.com/frankjoke/iobroker.bmw/issues"
+    "url": "https://github.com/frankjoke/ioBroker.bmw/issues"
   },
   "main": "bmw.js",
   "scripts": {

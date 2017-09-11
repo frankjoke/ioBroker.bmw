@@ -16,13 +16,13 @@
         "availableModes": [
             "daemon"
         ],
-        "readme": "https://github.com/frankjoke/iobroker.bmw/blob/master/README.md",
+        "readme": "https://github.com/frankjoke/ioBroker.bmw/blob/master/README.md",
         "loglevel": "info",
         "icon": "bmw.png",
         "keywords": [
             "BMW", "ConnectedDrive"
         ],
-        "extIcon": "https://raw.githubusercontent.com/frankjoke/iobroker.bmw/master/admin/bmw.png",
+        "extIcon": "https://raw.githubusercontent.com/frankjoke/ioBroker.bmw/master/admin/bmw.png",
         "type": "hardware"
     },
     "native": {
