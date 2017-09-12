@@ -31,6 +31,11 @@ p.s.: Ich möchte <https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper> 
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
+### 1.2.1
+* Removed RCT from possible services for remote control
+* Crerate a **.google_maps_link** state for the navigation which can be used to open a web-page with google maps to show the location.
+* set same level of debug if adapter is in debug mode and **debug!** is set
+
 ### 1.2.0 Test
 * Remoteservice implemented, basic functions like lock/unlock door or flash lights can be executed  
 * New services **store** and **map_download** added, this adds also **update** and **storePortfolio** in flatten and **storePortfolio|offerCode** in arrays.

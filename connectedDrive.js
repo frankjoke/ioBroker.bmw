@@ -156,6 +156,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
 
     const translateText = {
             de: {
+                RCT: '_remove_',
                 RCN: 'StarteKlima',
                 RDL: 'Versperren',
                 RDU: 'Aufsperren',
@@ -168,6 +169,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                 NOT_STARTED: 'Nicht gestartet'                
             },
             en: {
+                RCT: '_remove_',
                 RCN: 'StartClimatisation',
                 RDL: 'LockDoors',
                 RDU: 'UnlockDoors',
@@ -191,7 +193,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                         j.portfolioId &&
                         j.portfolioId.indexOf('RemoteOffer') > 0 &&
                         j.name.length == 3 &&
-                        j.name.startsWith('R')) {
+                        j.name.startsWith('R') && translate(j.name)!='_remove_') {
                         service.push({
                             name: that._remStart + translate(j.name),
                             services: translate('NOT_STARTED')
@@ -376,10 +378,11 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
             return (obj && obj[lat] && obj[long]) ?
                 A.get(`http://maps.googleapis.com/maps/api/geocode/json?latlng=${obj[lat]},${obj[long]}&sensor=true`)
                 .then(res => {
+                    obj.google_maps_link = `https://www.google.com/maps/dir/${obj[lat]},${obj[long]}/${obj[lat]},${obj[long]}/@${obj[lat]},${obj[long]},16z?hl=${A.C.lang}`;
                     res = A.J(res);
                     if (obj && res && res.results && res.results[0] && res.results[0].formatted_address)
                         obj.formatted_address = res.results[0].formatted_address;
-                    return A.D(`Added car location ${obj.formatted_address} with ${lat}/${long}`);
+                    return A.D(`Added car location Maps-Link for ${obj.formatted_address} with ${lat}/${long}`);
                 }) :
                 Promise.resolve();
         }

@@ -23,8 +23,8 @@ A.stateChange = function (id, state) {
         return A.D(`Command to refresh data received from ${state.from}${progress? ', will not be executed because other request is in progress!' : ''}`,
             progress || getCars());
     return A.getObject(id)
-        .then(obj => 
-            obj && obj.native && obj.native.command ? 
+        .then(obj =>
+            obj && obj.native && obj.native.command ?
             bmw.executeService(id, obj.native.command) : null)
         .catch(e => A.W(`stateChange Error ${e}!`));
 };
@@ -54,9 +54,17 @@ function getCars() {
                     };
                 mid = st;
                 states[st.id] = true;
-            } else
+            } else {
                 states[mid] = true;
-
+                if (mid.endsWith('.google_maps_link'))
+                    mid = {
+                        id: mid,
+                        name: mid,
+                        write: true,
+                        role: 'text.url',
+                        type: 'string',
+                    };
+            }
             return A.makeState(mid, mcar, true);
         }, 10)))
         .then(() => A.getObjectList({ // this check object list for old objects not transmitted anymore
@@ -76,8 +84,11 @@ function main() {
 
     adapter.config.server = A.T(adapter.config.server) == 'string' && adapter.config.server.length > 10 ? adapter.config.server : 'www.bmw-connecteddrive.com';
 
-    if ((A.debug = adapter.config.services.startsWith('debug!')))
-        A.D(`Adapter will rund in debug mode because 'debug!' flag as first letters in services!`, adapter.config.services = adapter.config.services.slice(6));
+    if ((A.debug = adapter.log.level == 'debug' || adapter.config.services.startsWith('debug!')))
+        A.D(`Adapter will run in debug mode because 'debug!' flag as first letters in services!`, 
+            adapter.config.services = adapter.config.services.startsWith('debug!') ? 
+                adapter.config.services.slice(6) 
+                : adapter.config.services);
 
     A.I(`BMW will scan the following services: ${adapter.config.services}.`);
 
