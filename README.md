@@ -3,7 +3,7 @@
 [![NPM version](http://img.shields.io/npm/v/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 **Tests:** Linux/Mac: [![Travis-CI](http://img.shields.io/travis/frankjoke/iobroker.bmw/master.svg)](https://travis-ci.org/frankjoke/iobroker.bmw)
-Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjoke/iobroker.bmw?branch=master&svg=true)](https://ci.appveyor.com/project/frankjoke/ioBroker-bmw/)
+Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjoke/ioBroker.bmw?branch=master&svg=true)](https://ci.appveyor.com/project/frankjoke/ioBroker-bmw/)
 [![NPM](https://nodei.co/npm/iobroker.bmw.png?downloads=true)](https://nodei.co/npm/iobroker.bmw/)
 ==============
 ### Adapter zum Auslesen von BMW ConnectedDrive-Daten
@@ -11,9 +11,9 @@ Der Adapter versucht die ConnectedDrive-Daten für die auf die angegebenen Benut
 Man kann filtern welche Daten angezeigt werden indem man im Admin die Einstellungen für
 
 * zu verwendete services (ich verwende nur: efficiency, dynamic, navigation und remote_execution). Wenn man 'debug!' am anfang schreibt wird der Adapter im Log die debug-Ausgaben einschalten und damit sieht man welche Daten er abfragt und geliefert bekommt. Adapter muss im admin auf 'info' stehen!
-* zu löschende Einträge (Bei mir Daten wie: modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages)
-* Einträge die von Arrays umgewandelt werden sollen (bei mir: lastTripList|name|lastTrip, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity, remote_history|eventId). bestehen nur zwei einträge mit '|' getrennt dann ist der erste der name des arrays das umgewandelt wird und der zweite der Name des eintrags und es werden alle Sub-Elemente übernommen, wenn ein dritter wert vorhanden ist wird nur dieser als Wert übernommen.
-* Einträge die in ihrer Hirarchie nach oben wandern sollen (bei mir attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList)
+* zu löschende Einträge (Bei mir Daten wie: *modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages*)
+* Einträge die von Arrays umgewandelt werden sollen (bei mir: *lastTripList|name|lastTrip, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity, remote_history|eventId, storePortfolio|offerCode*). bestehen nur zwei einträge mit '|' getrennt dann ist der erste der name des arrays das umgewandelt wird und der zweite der Name des eintrags und es werden alle Sub-Elemente übernommen, wenn ein dritter wert vorhanden ist wird nur dieser als Wert übernommen.
+* Einträge die in ihrer Hirarchie nach oben wandern sollen (bei mir *attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList, update, storePortfolio*)
 * der zu verwendete Datenserver kann auch angegeben werden, der Default ist für den Rest der Welt, wer in anderen Regionen wohnt kann auch <https://b2vapi.bmwgroup.cn:8592> für China, <https://b2vapi.bmwgroup.us> für USA und <https://b2vapi.bmwgroup.com> für Europe / Rest of World probieren. www.bmw-connecteddrive.com wird hoffentlich immer auf den richtigen weitergeleitet.
 * Es kann angegeben werden ob alle alten Objekte bei einem Adapterneustart gelöscht werden sollen.
 
@@ -21,12 +21,22 @@ Wenn der Adapter die Position vom Navigationssystem auslesen kann übersetz er d
 
 Ein spezieller '_RefresData'-State wird angelegt auf welchen man im admin.object klicken kann oder welchen man über Vis/oder andere Programme ansteuern kann.
 
+Wenn das Fahrzeug aktive remote-services hat (**service** muss bei den Services eingeschaltet sein!) sollten Button-States angelegt werden. Diese können die Aktion durchführen wenn im Objectviewer drauf geclickt wird oder wenn sie mit einem wert und *ack=false* beschrieben werden. Der Wert dieses States wird mit dem Service-Status überschrieben, z.B **PENDING** oder **EXECUTED** (oder deutsche übersetzungen).
+
+Ab 1.2.0 werden im **debug!**-Mode **_originalData**-States generiert. Wenn ihr Probleme mit einigen Datenpunkten hab köönt ihr das verwenden um mir die Daten zu senden (ich habe nicht alle BMW's zum Testen!).
+
 p.s.: Ich möchte <https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper> und <https://github.com/edent/BMW-i-Remote> für die Beispiele danken mittels derer sources ich den Zugriff geschafft habe!
 
 ## Important/Wichtig
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
+### 1.2.0 Test
+* Remoteservice implemented, basic functions like lock/unlock door or flash lights can be executed  
+* New services **store** and **map_download** added, this adds also **update** and **storePortfolio** in flatten and **storePortfolio|offerCode** in arrays.
+* If ConnectedDrive returns numbers as strings then they are converted to javascript numbers
+* Added creation of states for the original values received from ConnectedDrive in 'debug'-mode. They will be shown as **._originalData** entries and have the original string from ConnectedDrive as a value.
+
 ### 1.1.0
 * Added _RefreshData - State which can be used to start a refresh cycle manually (for example from admin.objects)
 * Added 'debug'-mode when you start services config string with 'debug!'

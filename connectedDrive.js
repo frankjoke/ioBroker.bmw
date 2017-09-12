@@ -8,19 +8,20 @@
 const https = require('https');
 const querystring = require('querystring');
 const assert = require('assert');
+const A = require('./myAdapter');
 
-function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or ({username:'x',password:'y',server:'z', array,flatten,delete, })
-    if (!(this instanceof BMWConnectedDrive)) return new BMWConnectedDrive(myAdapter);
-    assert(myAdapter && myAdapter.T, 'First Argumen need to be my MyAdapter instance!');
+function BMWConnectedDrive() { // can be (username,password,server) or ({username:'x',password:'y',server:'z', array,flatten,delete, })
+    if (!(this instanceof BMWConnectedDrive)) return new BMWConnectedDrive();
 
-    const that = this,
-        A = myAdapter;
+    const that = this;
 
     this._tokenData = null;
     this._tokenType = null;
     this._token = null;
     this._tokenEndTime = Date.now();
     this._vehicles = {};
+    this._remStart = '_RemoteControl_';
+
     this._server = "www.bmw-connecteddrive.com";
     this._services = "efficiency, dynamic, navigation, remote_execution, remote_chargingprofile, remote_history, servicepartner, service, specs";
     this._delete = ""; // "modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages",
@@ -45,7 +46,11 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
                     'Content-Type': 'application/x-www-form-urlencoded'
                 }, //                'Content-Length': Buffer.byteLength(_postData)
             };
-
+            if (_postData == 'exec') {
+                _postData = '';
+                options.headers['Content-Length'] = '0';
+                options.headers['Content-Type'] = 'application/json;charset=utf-8';
+            }
             if (typeof (that._token) === "string" && that._token.length > 0) {
                 options.headers.Authorization = that._tokenType + " " + that._token;
                 options.headers.Accept = 'application/json, text/plain, */*';
@@ -67,7 +72,9 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
                 res.on('end', () => _res(ret));
             });
 
-            req.on('error', (e) => A.W('BMWrequest error: ' + e.message, _rej(e)));
+            //            req.setTimeout(10000,() => _res(`Request for '${_path}' timed out!`, req.abort()));
+            req.on('socket', (socket) => socket.setTimeout(10000, () => req.abort())); //causes error event ↑
+            req.on('error', (e) => _rej(A.W('BMWrequest error: ' + A.O(e), e)));
 
             if (!!_postData)
                 req.write(_postData);
@@ -98,7 +105,7 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
 
     function readTokenData(data) {
         return new Promise((_res, _rej) => {
-            let json = JSON.parse(data);
+            let json = A.J(data);
 
             if (typeof (json.error) !== 'undefined')
                 return _rej(json.error + ": " + json.error_description);
@@ -137,9 +144,111 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
         that._delete = options.delete || that._delete;
         that._flatten = options.flatten || that._flatten;
         that._arrays = options.arrays || that._arrays;
+        that._lang = options.lang || 'de';
+        if (!translateText[that._lang])
+            that._lang = 'de';
         return requestToken()
             .then(() => A.D(`Initialized, client_id= ${A.O(that._token)}`))
             .catch(() => A.D(`Initialized, client_id= ${A.O(that._token)}`));
+    };
+
+    const reviewer = (key, value) => typeof value !== 'string' ? value : isNaN(value) ? value : value % 1 === 0 ? parseInt(value) : parseFloat(value);
+
+    const translateText = {
+            de: {
+                RCN: 'StarteKlima',
+                RDL: 'Versperren',
+                RDU: 'Aufsperren',
+                RHB: 'StarteHupe',
+                RLF: 'StarteLichthupe',
+                EXECUTED: 'Ausgeführt',
+                DELIVERED_TO_VEHICLE: 'An Farzeug gesendet',
+                PENDING: 'In Bearbeitung',
+                ABORTED: 'Abgebrochen!',
+                NOT_STARTED: 'Nicht gestartet'                
+            },
+            en: {
+                RCN: 'StartClimatisation',
+                RDL: 'LockDoors',
+                RDU: 'UnlockDoors',
+                RHB: 'UseHorn',
+                RLF: 'UseLight'
+            }
+        },
+        rService = 'service';
+
+    function translate(text) {
+        let trt = translateText[that._lang];
+        let res = trt[text];
+        return res ? res : '_' + text;
+    }
+
+    function getServices(service) {
+        for (let i of service)
+            if (i.name == 'cdpFeatures')
+                for (let j of i.services) {
+                    if (j.status == 'ACTIVE' &&
+                        j.portfolioId &&
+                        j.portfolioId.indexOf('RemoteOffer') > 0 &&
+                        j.name.length == 3 &&
+                        j.name.startsWith('R')) {
+                        service.push({
+                            name: that._remStart + translate(j.name),
+                            services: translate('NOT_STARTED')
+                        });
+                    }
+                }
+        return service;
+    }
+
+    that.executeService = function (service, code) {
+        if (that._execute || that._block || that._blocknext)
+            return A.W(`Cannot execute remote service ${code} for ${service} because other service is still executing!`);
+        that._execute = true;
+        A.D(`I should execute ${code} for ${service}!`);
+        let vin = service.split('.')[2],
+            id = service.slice(A.ain.length),
+            path = `/api/vehicle/remoteservices/v1/${vin}/${code}`,
+            pathe = `/api/vehicle/remoteservices/v1/${vin}/state/execution`,
+            evid;
+        return request(that._server, path, 'exec')
+            .then(res =>
+                A.J(res.data, reviewer),
+                err => `error ${err}`)
+            .then(res => A.W(`execute ${code} for ${service} resulted in: ${A.O(res)}`, res))
+            .then(res => {
+                if (res && res.nextRequestInSec !== undefined) 
+                    that._blocknext = A.wait(parseInt(res.nextRequestInSec) * 1000).then(() => that._blocknext = false);
+                
+                evid = res.remoteServiceEvent.eventId;
+                that._block = true;
+                let tries = 20;
+                A.makeState(id, translate(res.remoteServiceEvent && res.remoteServiceEvent.remoteServiceStatus ? res.remoteServiceEvent.remoteServiceStatus : 'ERROR'), true)
+                    .catch(() => true).then(() => A.while(
+                        () => that._block,
+                        () => A.wait(5000) // check every 5 sec for execution
+                        .then(() => request(that._server, pathe))
+                        .then(res =>
+                            A.J(res.data, reviewer),
+                            err => A.D(`request remotecontrol exec err: ${err}`, that._block = false))
+                        .then(res => {
+                            A.D(`execute ${code} state/execution: ${A.O(res)}`);
+                            if (res.eventId != evid || --tries<0)
+                                return A.makeState(id, translate('ABORTED'), (that._block = false,true));
+                            switch (res.remoteServiceStatus) {
+                                default:
+                                case 'EXECUTED':
+                                    that._block = false;
+                                    break;
+                                case 'PENDING':
+                                case 'DELIVERED_TO_VEHICLE':
+                                    break;
+                            }
+                            return A.makeState(id, translate(res.remoteServiceStatus), true);
+                        }), 10));
+            })
+            .catch(() => true)
+            .then(() => that._execute = false);
     };
 
     function requestVehicle(_rootData) {
@@ -147,9 +256,11 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
 
         function requestVehicleData(_type) {
             let tres = null,
+                otype = _type,
+                start = 'vehicle/',
+                version = '/v1/',
                 end = '',
                 nam = _type.split('/').join('_');
-
             switch (_type) {
                 case 'remote_chargingprofile':
                     _type = 'remoteservices/chargingprofile';
@@ -162,23 +273,50 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
                     _type = 'remoteservices';
                     end = '/state/execution';
                     break;
+                case 'map_download':
+                    start = 'me/';
+                    _type = 'service/mapupdate/download';
+                    break;
+                case 'store':
+                    start = '';
+                    version = '/v2/';
+                    end = '/offersAndPortfolios';
+                    break;
+                case 'offers':
+                    start = '';
+                    version = '/v2/';
+                    end = '/offersAndPortfolios';
+                    break;
+                case 'dynamic':
+                    end = `?offset=${new Date().getTimezoneOffset()}`;
+                    break;
             }
-            return request(that._server, `/api/vehicle/${_type}/v1/${carData.vin}${end}`)
-                .then(res => JSON.parse(tres = res.data))
+            let path = `/api/${start}${_type}${version}${carData.vin}${end}`;
+            A.D(`Request ${otype} for ${carData.vin} on ${path}`);
+            return request(that._server, path)
+                .then(res => res, err => A.D(`request for ${path} made error ${A.O(err)}`, ({
+                    data: `{ "_error" : "${A.O(err)}" }`
+                })))
+                .then(res => A.J(tres = res.data.replace(/\n/g, ' '), reviewer))
+                .then(res => res && A.debug ?
+                    (A.T(res) === 'array' ?
+                        (carData[nam + '._originalData'] = tres, res) :
+                        (res._originalData = tres, res)) :
+                    res)
+                .then(res => otype == rService ? getServices(res) : res)
                 .then(res => res.error ? res.error_description : (carData[nam] = res))
                 .catch(e => A.W(`RequestServiceData Error ${e} for ${_type+end} with result: ${A.O(tres)}`, Promise.resolve()));
         }
 
         return Promise.all(that._services.split(',').map(x => x.trim()).map(requestVehicleData, that))
             .then(() => convert(carData))
-            .then(car => that._vehicles[carData.vin] = A.I(`BMW car ${carData.vin} with ${Object.keys(car).length} data points received`, car))
-            .catch(e => A.W(`RequestVehicleData Error ${e}`));
+            .then(car => that._vehicles[carData.vin] = A.I(`BMW car ${carData.vin} with ${Object.keys(car).length} data points received`, car)); // .catch(e => A.W(`RequestVehicleData Error ${e}`));
     }
 
     that.requestVehicles = function () {
         return request(that._server, '/api/me/vehicles/v2')
-            .then(res => Promise.all(JSON.parse(res.data).map(requestVehicle, this)))
-            .catch(e => A.W(`RequestVehicles Error ${e}`));
+            .then(res => Promise.all(A.J(res.data, reviewer).map(requestVehicle, this)))
+            .catch(() => Promise.reject(`RequestVehicles Error, could niot get data for Vehicles!`));
     };
 
     function convert(car) {
@@ -186,6 +324,10 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
             arrs = {},
             dell = that._delete.split(',').map(s => s.trim()),
             flat = that._flatten.split(',').map(s => s.trim());
+
+        function nl(list, n) {
+            return flat.includes(n) ? list : (list != '' ? list + '.' : '') + n;
+        }
 
         function convObj(obj, namelist, last) {
             //        A.D(`confObj ${namelist}(${last}):${A.O(obj,1)}`)
@@ -200,14 +342,25 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
                             let n = j[m[0]];
                             if (!dell.includes(n))
                                 if (m.length == 1) {
-                                    delete j[m[0]];
+                                    if (Object.keys(j).length > 1)
+                                        delete j[m[0]];
                                     n = n.split('@')[0];
-                                    convObj(j, (namelist != '' ? namelist + '.' : '') + n, n);
-                                } else
-                                    convObj(j[m[1]], flat.includes(n) ? namelist : ((namelist != '' ? namelist + '.' : '') + n), n);
-
+                                    convObj(j, nl(namelist, n), n);
+                                } else {
+                                    let nn = n;
+                                    if (m.length == 3)
+                                        nn = j[m[2]] === undefined ? n : j[m[2]] + '.' + n;
+                                    convObj(j[m[1]], nl(namelist, nn), nn);
+                                }
                         }
                         return;
+                    } else {
+                        if (obj.length == 1) {
+                            convObj(obj[0], namelist, last);
+                        } else
+                            for (let k in obj) {
+                                convObj(obj[k], nl(namelist, 'item' + k), 'item' + k);
+                            }
                     }
                 }
             }
@@ -216,7 +369,19 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
             else if (A.T(obj) == 'object')
                 for (let i in obj)
                     if (!dell.includes(i))
-                        convObj(obj[i], flat.includes(i) ? namelist : ((namelist != '' ? namelist + '.' : '') + i), i);
+                        convObj(obj[i], nl(namelist, i), i);
+        }
+
+        function carLocation(obj, lat, long) {
+            return (obj && obj[lat] && obj[long]) ?
+                A.get(`http://maps.googleapis.com/maps/api/geocode/json?latlng=${obj[lat]},${obj[long]}&sensor=true`)
+                .then(res => {
+                    res = A.J(res);
+                    if (obj && res && res.results && res.results[0] && res.results[0].formatted_address)
+                        obj.formatted_address = res.results[0].formatted_address;
+                    return A.D(`Added car location ${obj.formatted_address} with ${lat}/${long}`);
+                }) :
+                Promise.resolve();
         }
 
         that._arrays.split(',').map(s => {
@@ -224,16 +389,9 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
             arrs[l[0]] = l.slice(1);
         });
 
-        return (car.navigation && car.navigation.latitude && car.navigation.longitude ?
-                A.get(`http://maps.googleapis.com/maps/api/geocode/json?latlng=${car.navigation.latitude},${car.navigation.longitude}&sensor=true`) :
-                Promise.resolve({}))
-            .then(res => {
-                res = JSON.parse(res);
-                if (car.navigation && res && res.results && res.results[0] && res.results[0].formatted_address)
-                    car.navigation.formatted_address = res.results[0].formatted_address;
-                A.D(`Added car location ${car.navigation.formatted_address}`);
-                return null;
-            }).then(() => (convObj(car, ''), list))
+        return carLocation(car.dynamic.attributesMap, 'gps_lat', 'gps_lng')
+            .then(() => carLocation(car.navigation, 'latitude', 'longitude'))
+            .then(() => (convObj(car, ''), list))
             .catch(err => A.W(`Error in covert car data: ${err}`, list));
     }
 
@@ -265,6 +423,10 @@ function BMWConnectedDrive(myAdapter) { // can be (username,password,server) or 
 
     Object.defineProperty(BMWConnectedDrive.prototype, "token", {
         get: () => this._token
+    });
+
+    Object.defineProperty(BMWConnectedDrive.prototype, "remStart", {
+        get: () => rService + '.' + this._remStart
     });
 
     return this;

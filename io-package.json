@@ -1,7 +1,7 @@
 {
     "common": {
         "name": "bmw",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "title": "BMW ConnectedDrive data Adapter",
         "desc": {
             "en": "Queries BMW ConnectedDrive data for registered cars in your BMW account",
@@ -16,13 +16,13 @@
         "availableModes": [
             "daemon"
         ],
-        "readme": "https://github.com/frankjoke/iobroker.bmw/blob/master/README.md",
+        "readme": "https://github.com/frankjoke/ioBroker.bmw/blob/master/README.md",
         "loglevel": "info",
         "icon": "bmw.png",
         "keywords": [
             "BMW", "ConnectedDrive"
         ],
-        "extIcon": "https://raw.githubusercontent.com/frankjoke/iobroker.bmw/master/admin/bmw.png",
+        "extIcon": "https://raw.githubusercontent.com/frankjoke/ioBroker.bmw/master/admin/bmw.png",
         "type": "hardware"
     },
     "native": {
@@ -30,10 +30,10 @@
         "server": "www.bmw-connecteddrive.com",
         "username": "email/usename",
         "password": "password",
-        "services": "efficiency, dynamic, navigation, remote_execution, remote_chargingprofile, remote_history, servicepartner, service, specs",
+        "services": "efficiency, dynamic, navigation, remote_execution, remote_chargingprofile, remote_history, servicepartner, service, specs, store, map_download",
         "delete": "modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages",
-        "flatten": "attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList, remoteServiceEvent",
-        "arrays": "lastTripList|name|lastTrip|unit, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity, remote_history|eventId"
+        "flatten": "attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList, remoteServiceEvent, update, storePortfolio",
+        "arrays": "lastTripList|name|lastTrip|unit, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity, remote_history|eventId, storePortfolio|offerCode"
     },
     "objects": []
 }
