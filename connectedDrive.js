@@ -394,8 +394,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
 
         return carLocation(car.dynamic.attributesMap, 'gps_lat', 'gps_lng')
             .then(() => carLocation(car.navigation, 'latitude', 'longitude'))
-            .then(() => (convObj(car, ''), list))
-            .catch(err => A.W(`Error in covert car data: ${err}`, list));
+            .then(() => (convObj(car, ''), list), err => A.W(`Error in convert car data: ${err}`, list));
     }
 
     that.toString = () => `BMWConnectedDrive(${that._username},${that._server})=${that._token}`;
