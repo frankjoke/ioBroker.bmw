@@ -2,7 +2,7 @@
 
 [![NPM version](http://img.shields.io/npm/v/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
-**Tests:** Linux/Mac: [![Travis-CI](http://img.shields.io/travis/frankjoke/iobroker.bmw/master.svg)](https://travis-ci.org/frankjoke/iobroker.bmw)
+**Tests:** Linux/Mac: [![Travis-CI](http://img.shields.io/travis/frankjoke/ioBroker.bmw/master.svg)](https://travis-ci.org/frankjoke/ioBroker.bmw)
 Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjoke/ioBroker.bmw?branch=master&svg=true)](https://ci.appveyor.com/project/frankjoke/ioBroker-bmw/)
 [![NPM](https://nodei.co/npm/iobroker.bmw.png?downloads=true)](https://nodei.co/npm/iobroker.bmw/)
 ==============
@@ -80,7 +80,7 @@ Der Benutzername, das Passwort und die Datenfilter müssen im Adapter config ein
 
 ## Installation
 
-Mit admin, iobroker oder von <https://github.com/frankjoke/iobroker.bmw> oder mit npm install iobroker.bmw
+Mit admin, ioBroker oder von <https://github.com/frankjoke/ioBroker.bmw> oder mit npm install ioBroker.bmw
 
 ## License
 
