@@ -99,7 +99,7 @@ MyAdapter.init = function MyAdapterInit(ori_adapter, ori_main) {
         .on('ready', () => initAdapter().then(() => main()))
         .on('objectChange', (id, obj) => obj && obj._id && objChange ? objChange(id, obj) : null)
         .on('stateChange', (id, state) => state && state.from != 'system.adapter.' + MyAdapter.ains && stateChange ?
-            stateChange(MyAdapter.D(`stateChange called for${id} = ${MyAdapter.O(state)}`, id), state) : null);
+            stateChange(MyAdapter.D(`stateChange called for ${id} = ${MyAdapter.O(state)}`, id), state) : null);
 
     return that;
 };

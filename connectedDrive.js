@@ -166,7 +166,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                 DELIVERED_TO_VEHICLE: 'An Farzeug gesendet',
                 PENDING: 'In Bearbeitung',
                 ABORTED: 'Abgebrochen!',
-                NOT_STARTED: 'Nicht gestartet'                
+                NOT_STARTED: 'Nicht gestartet',
             },
             en: {
                 RCT: '_remove_',
@@ -179,7 +179,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
         },
         rService = 'service';
 
-    function translate(text) {
+    that.translate =  function(text) {
         let trt = translateText[that._lang];
         let res = trt[text];
         return res ? res : '_' + text;
@@ -193,10 +193,10 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                         j.portfolioId &&
                         j.portfolioId.indexOf('RemoteOffer') > 0 &&
                         j.name.length == 3 &&
-                        j.name.startsWith('R') && translate(j.name)!='_remove_') {
+                        j.name.startsWith('R') && that.translate(j.name) != '_remove_') {
                         service.push({
-                            name: that._remStart + translate(j.name),
-                            services: translate('NOT_STARTED')
+                            name: that._remStart + that.translate(j.name),
+                            services: j.name
                         });
                     }
                 }
@@ -204,28 +204,29 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
     }
 
     that.executeService = function (service, code) {
+        code = code.trim();
         if (that._execute || that._block || that._blocknext)
             return A.W(`Cannot execute remote service ${code} for ${service} because other service is still executing!`);
         that._execute = true;
-        A.D(`I should execute ${code} for ${service}!`);
-        let vin = service.split('.')[2],
+        let vin = service.split('.')[2].trim(),
             id = service.slice(A.ain.length),
             path = `/api/vehicle/remoteservices/v1/${vin}/${code}`,
             pathe = `/api/vehicle/remoteservices/v1/${vin}/state/execution`,
             evid;
+        A.D(`I should execute ${code} for ${service} on ${vin} with path ${path}!`);
         return request(that._server, path, 'exec')
             .then(res =>
                 A.J(res.data, reviewer),
                 err => `error ${err}`)
             .then(res => A.W(`execute ${code} for ${service} resulted in: ${A.O(res)}`, res))
             .then(res => {
-                if (res && res.nextRequestInSec !== undefined) 
+                if (res && res.nextRequestInSec !== undefined)
                     that._blocknext = A.wait(parseInt(res.nextRequestInSec) * 1000).then(() => that._blocknext = false);
-                
+
                 evid = res.remoteServiceEvent.eventId;
                 that._block = true;
                 let tries = 20;
-                A.makeState(id, translate(res.remoteServiceEvent && res.remoteServiceEvent.remoteServiceStatus ? res.remoteServiceEvent.remoteServiceStatus : 'ERROR'), true)
+                A.makeState(id, that.translate(res.remoteServiceEvent && res.remoteServiceEvent.remoteServiceStatus ? res.remoteServiceEvent.remoteServiceStatus : 'ERROR'), true)
                     .catch(() => true).then(() => A.while(
                         () => that._block,
                         () => A.wait(5000) // check every 5 sec for execution
@@ -235,18 +236,18 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                             err => A.D(`request remotecontrol exec err: ${err}`, that._block = false))
                         .then(res => {
                             A.D(`execute ${code} state/execution: ${A.O(res)}`);
-                            if (res.eventId != evid || --tries<0)
-                                return A.makeState(id, translate('ABORTED'), (that._block = false,true));
+                            if (res.eventId != evid || --tries < 0)
+                                return A.makeState(id, that.translate('ABORTED'), (that._block = false, true));
                             switch (res.remoteServiceStatus) {
                                 default:
-                                case 'EXECUTED':
+                                    case 'EXECUTED':
                                     that._block = false;
-                                    break;
+                                break;
                                 case 'PENDING':
-                                case 'DELIVERED_TO_VEHICLE':
-                                    break;
+                                        case 'DELIVERED_TO_VEHICLE':
+                                        break;
                             }
-                            return A.makeState(id, translate(res.remoteServiceStatus), true);
+                            return A.makeState(id, that.translate(res.remoteServiceStatus), true);
                         }), 10));
             })
             .catch(() => true)
