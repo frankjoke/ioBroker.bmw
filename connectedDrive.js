@@ -378,7 +378,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
             return (obj && obj[lat] && obj[long]) ?
                 A.get(`http://maps.googleapis.com/maps/api/geocode/json?latlng=${obj[lat]},${obj[long]}&sensor=true`)
                 .then(res => {
-                    obj.google_maps_link = `https://www.google.com/maps/dir/home/${obj[lat]},${obj[long]}/@${obj[lat]},${obj[long]},16z?hl=${A.C.lang}`;
+                    obj.google_maps_link = `https://www.google.com/maps/dir/home/${obj[lat]},${obj[long]}/@?hl=${A.C.lang}`;
                     res = A.J(res);
                     if (obj && res && res.results && res.results[0] && res.results[0].formatted_address)
                         obj.formatted_address = res.results[0].formatted_address;
