@@ -31,7 +31,7 @@ p.s.: Ich möchte <https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper> 
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
-### 1.2.2
+### 1.2.3
 * Removed bug for remote-control
 * Removed bug after token times out (~2h of operation) to renew token
 * added check if service is not available (happens too often!)
