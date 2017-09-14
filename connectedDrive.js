@@ -40,7 +40,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                     case 302:
                         that._retry = false;
                         break;
-                    case 503: 
+                    case 503:
                         that._retry = false;
                         return Promise.reject(A.D(`Service unavailable. Please try later from ${_host}`));
                     case 401:
@@ -136,8 +136,8 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
 
                 that._tokenType = json.token_type;
                 that._token = json.access_token;
-                that._tokenEndTime = Date.now() + (1000 * 120);
-                //                that._tokenEndTime = Date.now() + 1000 * (parseInt(json.expires_in) - 1200);
+                //                that._tokenEndTime = Date.now() + (1000 * 120);
+                that._tokenEndTime = Date.now() + 1000 * (parseInt(json.expires_in) - 1200);
 
                 return json;
 
