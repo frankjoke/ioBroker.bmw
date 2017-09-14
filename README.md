@@ -31,6 +31,11 @@ p.s.: Ich möchte <https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper> 
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
+### 1.2.2
+* Removed bug for remote-control
+* Removed bug after token times out (~2h of operation) to renew token
+* added check if service is not available (happens too often!)
+
 ### 1.2.1
 * Removed RCT from possible services for remote control
 * Crerate a **.google_maps_link** state for the navigation which can be used to open a web-page with google maps to show the location.

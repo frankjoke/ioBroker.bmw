@@ -3,13 +3,13 @@
  *      (c) 2016- <frankjoke@hotmail.com>
  *      MIT License
  */
-// jshint node:true, esversion:6, strict:global, undef:true, unused:true
+// jshint es6: true, node: true, esversion: 6, strict: global, undef: true, unused: true
 "use strict";
-const util = require('util');
-const http = require('http');
-const https = require('https');
-const exec = require('child_process').exec;
-const assert = require('assert');
+const util = require('util'),
+    http = require('http'),
+    https = require('https'),
+    exec = require('child_process').exec,
+    assert = require('assert');
 
 let adapter, that, main, messages, timer, stateChange, objChange, unload, name, stopping = false,
     inDebug = false,
@@ -310,10 +310,8 @@ MyAdapter.get = (url, retry) => { // get a web page either with http or https an
         url.protocol == 'https' ? https.get : http.get;
     return (new Promise((resolve, reject) => {
         fun(url, (res) => {
-            const statusCode = res.statusCode;
-            //                const contentType = res.headers['content-type'];
-            if (statusCode !== 200) {
-                const error = new Error(`Request Failed. Status Code: ${statusCode}`);
+            if (res.statusCode !== 200) {
+                const error = new Error(`Request Failed. Status Code: ${res.statusCode}`);
                 res.resume(); // consume response data to free up memory
                 return reject(error);
             }

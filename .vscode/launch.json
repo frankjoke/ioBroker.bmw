@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "type": "node",
             "request": "attach",
@@ -23,6 +24,15 @@
             "localRoot": "${workspaceRoot}",
             "remoteRoot": "/opt/iobroker/node_modules/iobroker.bmw",
             "smartStep": true
+        },
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "opi<8",
+            "address": "192.168.178.86",
+            "port": 5858,
+            "localRoot": "${workspaceRoot}",
+            "remoteRoot": "/opt/iobroker/node_modules/iobroker.bmw"
         }
     ]
 }

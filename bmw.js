@@ -3,7 +3,7 @@
  *      (c) 2016- <frankjoke@hotmail.com>
  *      MIT License
  */
-// jshint node:true, esversion:6 strict:global, undef:true, unused:true
+// jshint node:true, esversion:6, strict:global, undef:true, unused:true
 "use strict";
 const utils = require('./lib/utils'); // Get common adapter utils
 const adapter = utils.adapter('bmw');
