@@ -190,7 +190,7 @@ MyAdapter.T = (i) => {
     } else if (t === 'number' && isNaN(i)) t = 'NaN';
     return t;
 };
-
+MyAdapter.dateTime = (date) => (typeof date == 'number' ? new Date(date).toISOString() : date.toISOString()).slice(0,-5).replace('T','@');
 MyAdapter.obToArray = (obj) => (Object.keys(obj).map(i => obj[i]));
 MyAdapter.stop = (dostop, callback) => {
     if (stopping) return;

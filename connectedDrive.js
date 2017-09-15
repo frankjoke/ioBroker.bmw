@@ -156,7 +156,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
         that._arrays = options.arrays || that._arrays;
         that._lang = options.lang || 'de';
         if (!translateText[that._lang])
-            that._lang = 'de';
+            that._lang = 'en';
         return requestToken()
             .then(() => A.D(`Initialized, client_id= ${A.O(that._token)}`))
             .catch(err => A.D(`Initialization err, client_id= ${A.O(err)}`));
@@ -177,6 +177,9 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                 PENDING: 'In Bearbeitung',
                 ABORTED: 'Abgebrochen!',
                 NOT_STARTED: 'Nicht gestartet',
+                _RefreshData: '_DatenNeuLaden',
+                _LastGood: '_LetzterDatenabrufOK',
+                _LastError: '_LetzerFehler',
             },
             en: {
                 RCT: '_remove_',
@@ -184,7 +187,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                 RDL: 'LockDoors',
                 RDU: 'UnlockDoors',
                 RHB: 'UseHorn',
-                RLF: 'UseLight'
+                RLF: 'UseLight',
             }
         },
         rService = 'service';
@@ -228,7 +231,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
             .then(res =>
                 A.J(res.data, reviewer),
                 err => `error ${err}`)
-            .then(res => A.W(`execute ${code} for ${service} resulted in: ${A.O(res)}`, res))
+            .then(res => A.D(`execute ${code} for ${service} resulted in: ${A.O(res)}`, res))
             .then(res => {
                 if (res && res.nextRequestInSec !== undefined)
                     that._blocknext = A.wait(parseInt(res.nextRequestInSec) * 1000).then(() => that._blocknext = false);
@@ -247,7 +250,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                         .then(res => {
                             A.D(`execute ${code} state/execution: ${A.O(res)}`);
                             if (res.eventId != evid || --tries < 0)
-                                return A.makeState(id, that.translate('ABORTED'), (that._block = false, true));
+                                return A.makeState(id, that.translate('ABORTED'), (that._block = false, A.W(`Remote ${id} timed out and set to '${that.translate('ABORTED')}'!`,true)));
                             switch (res.remoteServiceStatus) {
                                 default:
                                     case 'EXECUTED':

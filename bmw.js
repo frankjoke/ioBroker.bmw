@@ -12,14 +12,12 @@ const BMWConnectedDrive = require('./connectedDrive');
 
 const bmw = new BMWConnectedDrive(A.init(adapter, main));
 
-const refresh = '_RefreshData';
-
 let progress = false;
 
 A.stateChange = function (id, state) {
     if (!state || state && state.ack)
         return; // no action, we act only on a command (ack = false)
-    if (id == A.ain + refresh)
+    if (id == A.ain + bmw.translate('_RefreshData'))
         return A.D(`Command to refresh data received from ${state.from}${progress? ', will not be executed because other request is in progress!' : ''}`,
             progress || getCars());
     return A.getObject(id)
@@ -30,11 +28,17 @@ A.stateChange = function (id, state) {
 };
 
 function getCars() {
-    let states = {};
+    const refresh = bmw.translate('_RefreshData');
+    const lastok = bmw.translate('_LastGood');
+    const lasterr = bmw.translate('_LastError');
+    
+        let states = {};
     if (progress)
         return Promise.resolve();
     progress = true; // don't run if progress is on!
     states[refresh] = true; // don't delete the refresh state!!!
+    states[lastok] = true; // don't delete the lastok state!!!
+    states[lasterr] = true; // don't delete the lasterr state!!!
     return bmw.requestVehicles()
         .then(() => A.seriesIn(bmw.vehicles, car => A.seriesIn(bmw.vehicles[car], id => {
             let mcar = bmw.vehicles[car][id],
@@ -68,13 +72,15 @@ function getCars() {
             }
             return A.makeState(mid, mcar, true);
         }, 10)))
+        .then(() => A.makeState(lastok,`${A.dateTime(new Date())}`,A.I(`BMW updated car data for ${A.obToArray(bmw.vehicles).length} car(s)`,true)))
         .then(() => A.getObjectList({ // this check object list for old objects not transmitted anymore
             startkey: A.ain,
             endkey: A.ain + '\u9999'
         }))
         .then(res => A.seriesOf(res.rows, item => states[item.id.slice(A.ain.length)] ? Promise.resolve() :
             A.D(`Delete unneeded state ${A.O(item)}`, A.removeState(item.id.slice(A.ain.length))), 2))
-        .catch(err => A.W(`Error in GetCars, most probably the server is down! No data is changed:  ${err}`))
+        .catch(err => A.W(`Error in GetCars, most probably the server is down! No data is changed:  ${err}`,
+            A.makeState(lasterr,`${A.dateTime(new Date())}: ${A.O(err)}`,true)))
         .then(() => progress = false);
 }
 
@@ -96,7 +102,7 @@ function main() {
     A.wait(100) // just wait a bit to give other background a chance to complete as well.
         .then(() => bmw.initialize(adapter.config))
         .then(() => A.makeState({
-            id: refresh,
+            id: bmw.translate('_RefreshData'),
             'write': true,
             role: 'button',
             type: typeof true
