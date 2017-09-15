@@ -3,6 +3,8 @@
  *      (c) 2016- <frankjoke@hotmail.com>
  *      MIT License
  */
+/* jshint -W097 */
+/*jslint node:true */
 // jshint node:true, esversion:6, strict:global, undef:true, unused:true
 "use strict";
 const https = require('https');
@@ -15,7 +17,6 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
 
     const that = this;
 
-    this._tokenData = null;
     this._tokenType = null;
     this._token = null;
     this._tokenEndTime = Date.now();
@@ -27,63 +28,87 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
     this._delete = ""; // "modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages",
     this._flatten = "attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList, remoteServiceEvent";
     this._arrays = "lastTripList|name|lastTrip|unit, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity, remote_history|eventId";
-
-    function clearToken() {
-        that._tokenData = null;
-        that._tokenType = null;
-        that._token = null;
-        that._tokenEndTime = Date.now();
-    }
+    this._retry = false;
 
     function request(_host, _path, _postData) {
-        return new Promise((_res, _rej) => {
-            const options = {
-                hostname: _host,
-                port: '443',
-                path: _path,
-                method: !_postData ? 'GET' : 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }, //                'Content-Length': Buffer.byteLength(_postData)
-            };
-            if (_postData == 'exec') {
-                _postData = '';
-                options.headers['Content-Length'] = '0';
-                options.headers['Content-Type'] = 'application/json;charset=utf-8';
-            }
-            if (typeof (that._token) === "string" && that._token.length > 0) {
-                options.headers.Authorization = that._tokenType + " " + that._token;
-                options.headers.Accept = 'application/json, text/plain, */*';
-                options.headers['User-Agent'] = "MCVApp/1.5.2 (iPhone; iOS 9.1; Scale/2.00)";
-            }
+        return (Date.now() > that._tokenEndTime && (!_postData || _postData === 'exec') ?
+                requestToken().then(() => request(_host, _path, _postData), (err) => err) :
+                _request(_host, _path, _postData))
+            .then((res => {
+                switch (res.statusCode) {
+                    case 200:
+                    case 302:
+                        that._retry = false;
+                        break;
+                    case 503:
+                        that._retry = false;
+                        return Promise.reject(A.D(`Service unavailable. Please try later from ${_host}`));
+                    case 401:
+                        if (that._retry) {
+                            that._retry = false;
+                            return Promise.reject(`Authotization error with ${_host}! Please check your credentials!`);
+                        }
+                        that._retry = true;
+                        return requestToken().then(() => request(_host, _path, _postData), (err) => err);
+                    default:
+                        that._retry = false;
+                        res.data = A.D(`${_host}${_path} resulted status code: ${res.statusCode}: ${A.O(res.headers,1)}`);
+                        break;
+                }
+                return res;
+            }))
 
-            //	A.D("Calling " + options.hostname + options.path);
-            //            A.W('request token:' + A.O(that._token) +' options:'+ A.O(options) + ' ='+ A.O(_postData));
-            const req = https.request(options, (res) => {
-                //		A.D('STATUSCODE: ' + res.statusCode);
-                //		A.D('HEADERS: ' + JSON.stringify(res.headers));
-                const ret = {
-                    data: '',
-                    headers: res.headers
+        function _request(_host, _path, _postData) {
+            return new Promise((_res, _rej) => {
+
+                const options = {
+                    hostname: _host,
+                    port: '443',
+                    path: _path,
+                    method: !_postData ? 'GET' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }, //                'Content-Length': Buffer.byteLength(_postData)
                 };
+                if (_postData === 'exec') {
+                    _postData = '';
+                    options.headers['Content-Length'] = '0';
+                    options.headers['Content-Type'] = 'application/json;charset=utf-8';
+                }
+                if (typeof (that._token) === "string" && that._token.length > 0) {
+                    options.headers.Authorization = that._tokenType + " " + that._token;
+                    options.headers.Accept = 'application/json, text/plain, */*';
+                    options.headers['User-Agent'] = "MCVApp/1.5.2 (iPhone; iOS 9.1; Scale/2.00)";
+                }
 
-                res.setEncoding('utf8');
-                res.on('data', (chunk) => ret.data += chunk);
-                res.on('end', () => _res(ret));
+                const req = https.request(options, (res) => {
+                    const ret = {
+                        data: '',
+                        headers: res.headers,
+                        statusCode: res.statusCode,
+                    };
+
+                    res.setEncoding('utf8');
+                    res.on('data', (chunk) => ret.data += chunk);
+                    res.on('end', () => _res(ret));
+                });
+
+                //            req.setTimeout(10000,() => _res(`Request for '${_path}' timed out!`, req.abort()));
+                req.on('socket', (socket) => socket.setTimeout(10000, () => req.abort())); //causes error event ↑
+                req.on('error', (e) =>
+                    _rej(A.W(`BMWrequest error on path ${_path}: ${A.O(e)}`, e)));
+
+                if (!!_postData)
+                    req.write(_postData);
+                req.end();
             });
-
-            //            req.setTimeout(10000,() => _res(`Request for '${_path}' timed out!`, req.abort()));
-            req.on('socket', (socket) => socket.setTimeout(10000, () => req.abort())); //causes error event ↑
-            req.on('error', (e) => _rej(A.W('BMWrequest error: ' + A.O(e), e)));
-
-            if (!!_postData)
-                req.write(_postData);
-            req.end();
-        });
+        }
     }
 
     function requestToken() {
-        clearToken();
+        that._tokenType = null;
+        that._token = null;
+        that._tokenEndTime = 0;
         // Credit goes to https://github.com/sergejmueller/battery.ebiene.de
         const postData = querystring.stringify({
             'username': that._username,
@@ -100,38 +125,23 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
             .then(res => res.headers.location === undefined || res.headers.location === 'undefined' ?
                 Promise.reject(`unexpected response, location header not defined: ${A.O(res.headers)}`) :
                 JSON.stringify(querystring.parse(res.headers.location), null, 4))
-            .then(res => readTokenData(res));
-    }
+            .then(res => {
+                let json = A.J(res);
 
-    function readTokenData(data) {
-        return new Promise((_res, _rej) => {
-            let json = A.J(data);
+                if (typeof (json.error) !== 'undefined')
+                    return Promise.reject(json.error + ": " + json.error_description);
 
-            if (typeof (json.error) !== 'undefined')
-                return _rej(json.error + ": " + json.error_description);
+                if (typeof (json.token_type) === 'undefined' || typeof (json.access_token) === 'undefined')
+                    return Promise.reject("Couldn't get token, seems to be wrong username/password error!");
 
-            if (typeof (json.token_type) === 'undefined' || typeof (json.access_token) === 'undefined')
-                return _rej("Couldn't get token, seems to be wrong username/password error!");
+                that._tokenType = json.token_type;
+                that._token = json.access_token;
+                //                that._tokenEndTime = Date.now() + (1000 * 120);
+                that._tokenEndTime = Date.now() + 1000 * (parseInt(json.expires_in) - 1200);
 
-            that._tokenType = json.token_type;
-            that._token = json.access_token;
+                return json;
 
-            // CDP server seems to be picky, so be save and let the token expire two minutes earlier
-            let tokenExpiresInSeconds = json.expires_in - 120,
-                now = Date.now(),
-                tokenFileExists = !!that._tokenData,
-                expireTimestamp = tokenFileExists ? that._tokenEndTime : now + tokenExpiresInSeconds * 1000,
-                expired = now > expireTimestamp;
-
-            if (expired)
-                _res(A.D("requestToken: Token expired, requesting a new one", requestToken()));
-
-            if (!tokenFileExists) {
-                that._tokenData = json;
-                that._tokenEndTime = expireTimestamp;
-            }
-            _res(json);
-        });
+            });
     }
 
     that.initialize = function (options) {
@@ -146,16 +156,17 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
         that._arrays = options.arrays || that._arrays;
         that._lang = options.lang || 'de';
         if (!translateText[that._lang])
-            that._lang = 'de';
+            that._lang = 'en';
         return requestToken()
             .then(() => A.D(`Initialized, client_id= ${A.O(that._token)}`))
-            .catch(() => A.D(`Initialized, client_id= ${A.O(that._token)}`));
+            .catch(err => A.D(`Initialization err, client_id= ${A.O(err)}`));
     };
 
     const reviewer = (key, value) => typeof value !== 'string' ? value : isNaN(value) ? value : value % 1 === 0 ? parseInt(value) : parseFloat(value);
 
     const translateText = {
             de: {
+                RCT: '_remove_',
                 RCN: 'StarteKlima',
                 RDL: 'Versperren',
                 RDU: 'Aufsperren',
@@ -165,19 +176,23 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                 DELIVERED_TO_VEHICLE: 'An Farzeug gesendet',
                 PENDING: 'In Bearbeitung',
                 ABORTED: 'Abgebrochen!',
-                NOT_STARTED: 'Nicht gestartet'                
+                NOT_STARTED: 'Nicht gestartet',
+                _RefreshData: '_DatenNeuLaden',
+                _LastGood: '_LetzterDatenabrufOK',
+                _LastError: '_LetzerFehler',
             },
             en: {
+                RCT: '_remove_',
                 RCN: 'StartClimatisation',
                 RDL: 'LockDoors',
                 RDU: 'UnlockDoors',
                 RHB: 'UseHorn',
-                RLF: 'UseLight'
+                RLF: 'UseLight',
             }
         },
         rService = 'service';
 
-    function translate(text) {
+    that.translate = function (text) {
         let trt = translateText[that._lang];
         let res = trt[text];
         return res ? res : '_' + text;
@@ -186,15 +201,15 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
     function getServices(service) {
         for (let i of service)
             if (i.name == 'cdpFeatures')
-                for (let j of i.services) {
+                for (var j of i.services) {
                     if (j.status == 'ACTIVE' &&
                         j.portfolioId &&
                         j.portfolioId.indexOf('RemoteOffer') > 0 &&
                         j.name.length == 3 &&
-                        j.name.startsWith('R')) {
+                        j.name.startsWith('R') && that.translate(j.name) != '_remove_') {
                         service.push({
-                            name: that._remStart + translate(j.name),
-                            services: translate('NOT_STARTED')
+                            name: that._remStart + that.translate(j.name),
+                            services: j.name
                         });
                     }
                 }
@@ -202,28 +217,29 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
     }
 
     that.executeService = function (service, code) {
+        code = code.trim();
         if (that._execute || that._block || that._blocknext)
             return A.W(`Cannot execute remote service ${code} for ${service} because other service is still executing!`);
         that._execute = true;
-        A.D(`I should execute ${code} for ${service}!`);
-        let vin = service.split('.')[2],
+        let vin = service.split('.')[2].trim(),
             id = service.slice(A.ain.length),
             path = `/api/vehicle/remoteservices/v1/${vin}/${code}`,
             pathe = `/api/vehicle/remoteservices/v1/${vin}/state/execution`,
             evid;
+        A.D(`I should execute ${code} for ${service} on ${vin} with path ${path}!`);
         return request(that._server, path, 'exec')
             .then(res =>
                 A.J(res.data, reviewer),
                 err => `error ${err}`)
-            .then(res => A.W(`execute ${code} for ${service} resulted in: ${A.O(res)}`, res))
+            .then(res => A.D(`execute ${code} for ${service} resulted in: ${A.O(res)}`, res))
             .then(res => {
-                if (res && res.nextRequestInSec !== undefined) 
+                if (res && res.nextRequestInSec !== undefined)
                     that._blocknext = A.wait(parseInt(res.nextRequestInSec) * 1000).then(() => that._blocknext = false);
-                
+
                 evid = res.remoteServiceEvent.eventId;
                 that._block = true;
                 let tries = 20;
-                A.makeState(id, translate(res.remoteServiceEvent && res.remoteServiceEvent.remoteServiceStatus ? res.remoteServiceEvent.remoteServiceStatus : 'ERROR'), true)
+                A.makeState(id, that.translate(res.remoteServiceEvent && res.remoteServiceEvent.remoteServiceStatus ? res.remoteServiceEvent.remoteServiceStatus : 'ERROR'), true)
                     .catch(() => true).then(() => A.while(
                         () => that._block,
                         () => A.wait(5000) // check every 5 sec for execution
@@ -233,18 +249,18 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                             err => A.D(`request remotecontrol exec err: ${err}`, that._block = false))
                         .then(res => {
                             A.D(`execute ${code} state/execution: ${A.O(res)}`);
-                            if (res.eventId != evid || --tries<0)
-                                return A.makeState(id, translate('ABORTED'), (that._block = false,true));
+                            if (res.eventId != evid || --tries < 0)
+                                return A.makeState(id, that.translate('ABORTED'), (that._block = false, A.W(`Remote ${id} timed out and set to '${that.translate('ABORTED')}'!`,true)));
                             switch (res.remoteServiceStatus) {
                                 default:
-                                case 'EXECUTED':
+                                    case 'EXECUTED':
                                     that._block = false;
-                                    break;
+                                break;
                                 case 'PENDING':
-                                case 'DELIVERED_TO_VEHICLE':
-                                    break;
+                                        case 'DELIVERED_TO_VEHICLE':
+                                        break;
                             }
-                            return A.makeState(id, translate(res.remoteServiceStatus), true);
+                            return A.makeState(id, that.translate(res.remoteServiceStatus), true);
                         }), 10));
             })
             .catch(() => true)
@@ -315,8 +331,11 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
 
     that.requestVehicles = function () {
         return request(that._server, '/api/me/vehicles/v2')
-            .then(res => Promise.all(A.J(res.data, reviewer).map(requestVehicle, this)))
-            .catch(() => Promise.reject(`RequestVehicles Error, could niot get data for Vehicles!`));
+            .then(res => res && res.data ? res : Promise.reject(res))
+            .then(res => A.J(res.data, reviewer))
+            .then(res => res && Array.isArray(res) ? res : Promise.reject(res))
+            .then(res => Promise.all(res.map(requestVehicle, this)))
+            .catch(err => Promise.reject(`RequestVehicles Error to get data for Vehicles : ${A.O(err)}!`));
     };
 
     function convert(car) {
@@ -376,10 +395,11 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
             return (obj && obj[lat] && obj[long]) ?
                 A.get(`http://maps.googleapis.com/maps/api/geocode/json?latlng=${obj[lat]},${obj[long]}&sensor=true`)
                 .then(res => {
+                    obj.google_maps_link = `https://www.google.com/maps/dir/home/${obj[lat]},${obj[long]}/@?hl=${A.C.lang}`;
                     res = A.J(res);
                     if (obj && res && res.results && res.results[0] && res.results[0].formatted_address)
                         obj.formatted_address = res.results[0].formatted_address;
-                    return A.D(`Added car location ${obj.formatted_address} with ${lat}/${long}`);
+                    return A.D(`Added car location Maps-Link for ${obj.formatted_address} with ${lat}/${long}`);
                 }) :
                 Promise.resolve();
         }
@@ -391,8 +411,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
 
         return carLocation(car.dynamic.attributesMap, 'gps_lat', 'gps_lng')
             .then(() => carLocation(car.navigation, 'latitude', 'longitude'))
-            .then(() => (convObj(car, ''), list))
-            .catch(err => A.W(`Error in covert car data: ${err}`, list));
+            .then(() => (convObj(car, ''), list), err => A.W(`Error in convert car data: ${err}`, list));
     }
 
     that.toString = () => `BMWConnectedDrive(${that._username},${that._server})=${that._token}`;

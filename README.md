@@ -2,7 +2,7 @@
 
 [![NPM version](http://img.shields.io/npm/v/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
-**Tests:** Linux/Mac: [![Travis-CI](http://img.shields.io/travis/frankjoke/iobroker.bmw/master.svg)](https://travis-ci.org/frankjoke/iobroker.bmw)
+**Tests:** Linux/Mac: [![Travis-CI](http://img.shields.io/travis/frankjoke/ioBroker.bmw/master.svg)](https://travis-ci.org/frankjoke/ioBroker.bmw)
 Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjoke/ioBroker.bmw?branch=master&svg=true)](https://ci.appveyor.com/project/frankjoke/ioBroker-bmw/)
 [![NPM](https://nodei.co/npm/iobroker.bmw.png?downloads=true)](https://nodei.co/npm/iobroker.bmw/)
 ==============
@@ -31,6 +31,20 @@ p.s.: Ich möchte <https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper> 
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
+### 1.2.4
+* added states for last successful donload and error to see how old data is
+* Improved error handling when services are not available
+
+### 1.2.3
+* Removed bug for remote-control
+* Removed bug after token times out (~2h of operation) to renew token
+* added check if service is not available (happens too often!)
+
+### 1.2.1
+* Removed RCT from possible services for remote control
+* Crerate a **.google_maps_link** state for the navigation which can be used to open a web-page with google maps to show the location.
+* set same level of debug if adapter is in debug mode and **debug!** is set
+
 ### 1.2.0 Test
 * Remoteservice implemented, basic functions like lock/unlock door or flash lights can be executed  
 * New services **store** and **map_download** added, this adds also **update** and **storePortfolio** in flatten and **storePortfolio|offerCode** in arrays.
@@ -75,7 +89,7 @@ Der Benutzername, das Passwort und die Datenfilter müssen im Adapter config ein
 
 ## Installation
 
-Mit admin, iobroker oder von <https://github.com/frankjoke/iobroker.bmw> oder mit npm install iobroker.bmw
+Mit admin, ioBroker oder von <https://github.com/frankjoke/ioBroker.bmw> oder mit npm install ioBroker.bmw
 
 ## License
 
