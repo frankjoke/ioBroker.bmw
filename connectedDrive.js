@@ -330,9 +330,11 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
     }
 
     that.requestVehicles = function () {
+            that.ocardata = undefined;
         return request(that._server, '/api/me/vehicles/v2')
-            .then(res => res && res.data ? res : Promise.reject(res))
-            .then(res => A.J(res.data, reviewer))
+            .then(res => res && res.data ? res.data : Promise.reject(res))
+            .then(res => !A.debug ? res : that.ocardata = res) 
+            .then(res => A.J(res, reviewer))
             .then(res => res && Array.isArray(res) ? res : Promise.reject(res))
             .then(res => Promise.all(res.map(requestVehicle, this)))
             .catch(err => Promise.reject(`RequestVehicles Error to get data for Vehicles : ${A.O(err)}!`));

@@ -34,6 +34,7 @@ p.s.: Ich möchte <https://github.com/Lyve1981/BMW-ConnectedDrive-JSON-Wrapper> 
 ### 1.2.4
 * added states for last successful donload and error to see how old data is
 * Improved error handling when services are not available
+* added _originalData object (wen in debug!) for root request for available cars on this account
 
 ### 1.2.3
 * Removed bug for remote-control

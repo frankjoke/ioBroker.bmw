@@ -31,6 +31,7 @@ function getCars() {
     const refresh = bmw.translate('_RefreshData');
     const lastok = bmw.translate('_LastGood');
     const lasterr = bmw.translate('_LastError');
+    const odata = '_originalData';
     
         let states = {};
     if (progress)
@@ -39,6 +40,7 @@ function getCars() {
     states[refresh] = true; // don't delete the refresh state!!!
     states[lastok] = true; // don't delete the lastok state!!!
     states[lasterr] = true; // don't delete the lasterr state!!!
+    states[odata] = true;
     return bmw.requestVehicles()
         .then(() => A.seriesIn(bmw.vehicles, car => A.seriesIn(bmw.vehicles[car], id => {
             let mcar = bmw.vehicles[car][id],
@@ -72,6 +74,7 @@ function getCars() {
             }
             return A.makeState(mid, mcar, true);
         }, 10)))
+        .then(() => bmw.ocardata ?  A.makeState(odata,`${bmw.ocardata}`) : true)
         .then(() => A.makeState(lastok,`${A.dateTime(new Date())}`,A.I(`BMW updated car data for ${A.obToArray(bmw.vehicles).length} car(s)`,true)))
         .then(() => A.getObjectList({ // this check object list for old objects not transmitted anymore
             startkey: A.ain,
