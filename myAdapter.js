@@ -178,7 +178,6 @@ Object.defineProperty(MyAdapter, "C", {
 });
 
 MyAdapter.wait = (time, arg) => new Promise(res => setTimeout(res, time, arg));
-
 MyAdapter.O = (obj, level) => util.inspect(obj, false, level || 2, false).replace(/\n/g, ' ');
 MyAdapter.N = (fun) => setTimeout.apply(null, [fun, 0].concat(Array.prototype.slice.call(arguments, 1))); // move fun to next schedule keeping arguments
 MyAdapter.T = (i) => {
@@ -190,7 +189,14 @@ MyAdapter.T = (i) => {
     } else if (t === 'number' && isNaN(i)) t = 'NaN';
     return t;
 };
-MyAdapter.dateTime = (date) => (typeof date == 'number' ? new Date(date).toISOString() : date.toISOString()).slice(0,-5).replace('T','@');
+MyAdapter.locDate = (date) => date instanceof Date ?
+    new Date(date.getTime() - date.getTimezoneOffset() * 60000) :
+    typeof date === 'string' ?
+    new Date(Date.parse(date) - (new Date().getTimezoneOffset()) * 60000) :
+    !isNaN(+date) ?
+    new Date(+date - (new Date().getTimezoneOffset()) * 60000) :
+    new Date(Date.now() - (new Date().getTimezoneOffset()) * 60000);
+MyAdapter.dateTime = (date) => MyAdapter.locDate(date).toISOString().slice(0, -5).replace('T', '@');
 MyAdapter.obToArray = (obj) => (Object.keys(obj).map(i => obj[i]));
 MyAdapter.stop = (dostop, callback) => {
     if (stopping) return;
