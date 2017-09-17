@@ -11,7 +11,7 @@ const util = require('util'),
     exec = require('child_process').exec,
     assert = require('assert');
 
-let adapter, that, main, messages, timer, stateChange, objChange, unload, name, stopping = false,
+var adapter, that, main, messages, timer, stateChange, objChange, unload, name, stopping = false,
     inDebug = false,
     objects = {},
     states = {};
