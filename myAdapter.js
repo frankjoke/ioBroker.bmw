@@ -16,18 +16,14 @@ let adapter, that, main, messages, timer, stateChange, objChange, unload, name, 
     objects = {},
     states = {};
 
-function /** void */ slog( /** object */ adapter, /** string */ log, /** string */ text) {
-    if (adapter && adapter.log && typeof adapter.log[log] === 'function')
-        adapter.log[log](text);
-    else
-        console.log(text);
-}
+const slog = (adapter, log, text) => adapter && adapter.log && typeof adapter.log[log] === 'function' ?
+    adapter.log[log](text) :
+    console.log(log + ': ' + text);
 
-function /** void */ processMessage(obj) {
-    (obj && obj.command ?
-        messages(obj) :
-        Promise.resolve(messages(MyAdapter.W(`invalid Message ${obj}`, obj))))
-    .then(res => MyAdapter.c2p(adapter.getMessage)().then(obj => obj ? processMessage(obj) : res));
+function processMessage(obj) {
+    return messages(obj).then(res => res, err => MyAdapter.W(`invalid Message ${MyAdapter.O(obj)} caused error ${MyAdapter.O(err)}`, err))
+        .then(res => obj.callback ? adapter.sendTo(obj.from, obj.command, res, obj.callback) : MyAdapter.D(`Message received from ${obj.from} with command ${obj.command}`))
+        .then(() => MyAdapter.c2p(adapter.getMessage)().then(obj => obj ? processMessage(obj) : true));
 }
 
 function initAdapter() {
@@ -80,7 +76,7 @@ MyAdapter.init = function MyAdapterInit(ori_adapter, ori_main) {
     assert(adapter && adapter.name, 'myAdapter:(adapter) no adapter here!');
     name = adapter.name;
     main = typeof ori_main === 'function' ? ori_main : () => MyAdapter.W(`No 'main() defined for ${adapter.name}!`);
-    messages = (mes) => MyAdapter.W(`Message ${MyAdapter.O(mes)} received and no handler defined!`);
+    messages = (mes) => Promise.resolve(MyAdapter.W(`Message ${MyAdapter.O(mes)} received and no handler defined!`));
 
     MyAdapter.getForeignObject = MyAdapter.c2p(adapter.getForeignObject);
     MyAdapter.setForeignObject = MyAdapter.c2p(adapter.setForeignObject);
@@ -94,7 +90,8 @@ MyAdapter.init = function MyAdapterInit(ori_adapter, ori_main) {
     MyAdapter.createState = MyAdapter.c2p(adapter.createState);
     MyAdapter.extendObject = MyAdapter.c2p(adapter.extendObject);
 
-    adapter.on('message', (obj) => processMessage(MyAdapter.I(`received Message ${MyAdapter.O(obj)}`, obj)))
+    adapter.on('message', (obj) => !!obj ? processMessage(
+            MyAdapter.D(`received Message ${MyAdapter.O(obj)}`, obj)) : true)
         .on('unload', (callback) => MyAdapter.stop(false, callback))
         .on('ready', () => initAdapter().then(() => main()))
         .on('objectChange', (id, obj) => obj && obj._id && objChange ? objChange(id, obj) : null)
@@ -177,6 +174,7 @@ Object.defineProperty(MyAdapter, "C", {
     get: () => adapter.config
 });
 
+MyAdapter.clone = (obj) => JSON.parse(JSON.stringify(obj));
 MyAdapter.wait = (time, arg) => new Promise(res => setTimeout(res, time, arg));
 MyAdapter.O = (obj, level) => util.inspect(obj, false, level || 2, false).replace(/\n/g, ' ');
 MyAdapter.N = (fun) => setTimeout.apply(null, [fun, 0].concat(Array.prototype.slice.call(arguments, 1))); // move fun to next schedule keeping arguments
@@ -364,7 +362,6 @@ MyAdapter.makeState = function (ido, value, ack) {
         type: 'state',
         _id: id
     };
-
     for (let i in ido)
         if (i == 'native') {
             st.native = st.native || {};
@@ -372,7 +369,7 @@ MyAdapter.makeState = function (ido, value, ack) {
                 st.native[j] = ido[i][j];
         } else if (i != 'id' && i != 'val')
         st.common[i] = ido[i];
-    //        MyAdapter.I(`will create state:${id} with ${MyAdapter.O(st)}`);
+    //    MyAdapter.I(`will create state:${id} with ${MyAdapter.O(st)}`);
     return MyAdapter.extendObject(id, st, null)
         .then(x => MyAdapter.states[id] = x)
         .then(() => st.common.state == 'state' ? MyAdapter.changeState(id, value, ack) : Promise.resolve())
