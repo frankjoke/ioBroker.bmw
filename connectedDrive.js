@@ -15,20 +15,22 @@ const A = require('./myAdapter');
 function BMWConnectedDrive() { // can be (username,password,server) or ({username:'x',password:'y',server:'z', array,flatten,delete, })
     if (!(this instanceof BMWConnectedDrive)) return new BMWConnectedDrive();
 
-    const that = this;
-
     this._tokenType = null;
     this._token = null;
     this._tokenEndTime = Date.now();
     this._vehicles = {};
     this._remStart = '_RemoteControl_';
-
+    this._rename = {};
     this._server = "www.bmw-connecteddrive.com";
     this._services = "efficiency, dynamic, navigation, remote_execution, remote_chargingprofile, remote_history, servicepartner, service, specs";
     this._delete = ""; // "modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages",
     this._flatten = "attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList, remoteServiceEvent";
     this._arrays = "lastTripList|name|lastTrip|unit, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity, remote_history|eventId";
     this._retry = false;
+    this._dell = [];
+    this._flatt = [];
+
+    const that = this;
 
     function request(_host, _path, _postData) {
         return (Date.now() > that._tokenEndTime && (!_postData || _postData === 'exec') ?
@@ -157,6 +159,23 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
         that._lang = options.lang || 'de';
         if (!translateText[that._lang])
             that._lang = 'en';
+        if (options.rename && options.rename.trim().length > 0) {
+            let rp = options.rename.split(',');
+            for (var i of rp) {
+                let vp = i.split('|').map(s => s.trim().replace(/\./g, '_'));
+                if (vp.length !== 2) A.W(`rename config error: need always from|to pairs separated by '|'! which is not true for ${i}!`);
+                else {
+                    if (that._rename.hasOwnProperty(vp[0]) || that._rename.hasOwnProperty(vp[1]))
+                        A.W(`rename config error: names should not be used twice (on any side od rename, ${vp[0]} or ${vp[1]} was used already!`);
+                    else {
+                        that._rename[vp[0]] = vp[1];
+                        that._rename[vp[1]] = vp[0];
+                    }
+                }
+            }
+        }
+        that._dell = that._delete.split(',').map(s => s.trim());
+        that._flatt = that._flatten.split(',').map(s => s.trim());
         return requestToken()
             .then(() => A.D(`Initialized, client_id= ${A.O(that._token)}`))
             .catch(err => A.D(`Initialization err, client_id= ${A.O(err)}`));
@@ -198,6 +217,13 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
         return res ? res : '_' + text;
     }
 
+    that.rename = function (text) {
+        let found = that._rename[text];
+        return found ? found : text;
+    }
+
+    that.renameTranslate = (text) => that.rename(that.translate(text));
+
     function getServices(service) {
         for (let i of service)
             if (i.name == 'cdpFeatures')
@@ -206,9 +232,9 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                         j.portfolioId &&
                         j.portfolioId.indexOf('RemoteOffer') > 0 &&
                         j.name.length == 3 &&
-                        j.name.startsWith('R') && that.translate(j.name) != '_remove_') {
+                        j.name.startsWith('R') && that.renameTranslate(j.name) != '_remove_') {
                         service.push({
-                            name: that._remStart + that.translate(j.name),
+                            name: that._remStart + that.renameTranslate(j.name),
                             services: j.name
                         });
                     }
@@ -219,10 +245,10 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
     that.executeService = function (service, code) {
         code = code.trim();
         if (that._execute || that._block || that._blocknext)
-            return A.W(`Cannot execute remote service ${code} for ${service} because other service is still executing!`);
+            return Promise.reject(A.W(`Cannot execute remote service ${code} for ${service} because other service is still executing!`));
         that._execute = true;
-        let vin = service.split('.')[2].trim(),
-            id = service.slice(A.ain.length),
+        let id = service.startsWith(A.ain) ? service.slice(A.ain.length) : service,
+            vin = that.rename(id.split('.')[0]),
             path = `/api/vehicle/remoteservices/v1/${vin}/${code}`,
             pathe = `/api/vehicle/remoteservices/v1/${vin}/state/execution`,
             evid;
@@ -250,7 +276,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                         .then(res => {
                             A.D(`execute ${code} state/execution: ${A.O(res)}`);
                             if (res.eventId != evid || --tries < 0)
-                                return A.makeState(id, that.translate('ABORTED'), (that._block = false, A.W(`Remote ${id} timed out and set to '${that.translate('ABORTED')}'!`,true)));
+                                return A.makeState(id, that.translate('ABORTED'), (that._block = false, A.W(`Remote ${id} timed out and set to '${that.translate('ABORTED')}'!`, true)));
                             switch (res.remoteServiceStatus) {
                                 default:
                                     case 'EXECUTED':
@@ -263,7 +289,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                             return A.makeState(id, that.translate(res.remoteServiceStatus), true);
                         }), 10));
             })
-            .catch(() => true)
+            .catch(err => A.D(` error in execution  ${code} for ${service} resulted in: ${A.O(err)}`, err))
             .then(() => that._execute = false);
     };
 
@@ -324,15 +350,17 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                 .catch(e => A.W(`RequestServiceData Error ${e} for ${_type+end} with result: ${A.O(tres)}`, Promise.resolve()));
         }
 
-        return Promise.all(that._services.split(',').map(x => x.trim()).map(requestVehicleData, that))
+        return A.seriesOf(that._services.split(',').map(x => x.trim()), requestVehicleData, 50)
             .then(() => convert(carData))
-            .then(car => that._vehicles[carData.vin] = A.I(`BMW car ${carData.vin} with ${Object.keys(car).length} data points received`, car)); // .catch(e => A.W(`RequestVehicleData Error ${e}`));
+            .then(car => that._vehicles[that.rename(car._vin_ = carData.vin)] = A.I(`BMW car ${carData.vin} with ${Object.keys(car).length} data points received`, car)); // .catch(e => A.W(`RequestVehicleData Error ${e}`));
     }
 
     that.requestVehicles = function () {
+        that.ocardata = undefined;
         return request(that._server, '/api/me/vehicles/v2')
-            .then(res => res && res.data ? res : Promise.reject(res))
-            .then(res => A.J(res.data, reviewer))
+            .then(res => res && res.data ? res.data : Promise.reject(res))
+            .then(res => !A.debug ? res : that.ocardata = res)
+            .then(res => A.J(res, reviewer))
             .then(res => res && Array.isArray(res) ? res : Promise.reject(res))
             .then(res => Promise.all(res.map(requestVehicle, this)))
             .catch(err => Promise.reject(`RequestVehicles Error to get data for Vehicles : ${A.O(err)}!`));
@@ -340,37 +368,37 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
 
     function convert(car) {
         const list = {},
-            arrs = {},
-            dell = that._delete.split(',').map(s => s.trim()),
-            flat = that._flatten.split(',').map(s => s.trim());
+            arrs = {};
 
         function nl(list, n) {
-            return flat.includes(n) ? list : (list != '' ? list + '.' : '') + n;
+            return that._flatt.includes(n) || that._flatt.includes(that.rename(n)) ? list : (list != '' ? list + '.' : '') + n;
         }
 
         function convObj(obj, namelist, last) {
             //        A.D(`confObj ${namelist}(${last}):${A.O(obj,1)}`)
             if (A.T(obj) == 'array') {
-                if (obj.length > 0 && A.T(obj[0]) != 'object')
+                if (obj.length === 0 || obj.length > 0 && A.T(obj[0]) !== 'object')
                     obj = obj.join(', ');
                 else {
                     //                A.D(`${last}: ${arrs[last]} = ${A.O(obj)}`);
-                    if (arrs[last]) {
-                        let m = arrs[last];
+                    if (arrs[last] || arrs[that.rename(last)]) {
+                        let m = arrs.hasOwnProperty(last) ? arrs[last] : arrs[that.rename(last)];
                         for (let j of obj) {
                             let n = j[m[0]];
-                            if (!dell.includes(n))
-                                if (m.length == 1) {
-                                    if (Object.keys(j).length > 1)
-                                        delete j[m[0]];
-                                    n = n.split('@')[0];
-                                    convObj(j, nl(namelist, n), n);
-                                } else {
-                                    let nn = n;
-                                    if (m.length == 3)
-                                        nn = j[m[2]] === undefined ? n : j[m[2]] + '.' + n;
-                                    convObj(j[m[1]], nl(namelist, nn), nn);
-                                }
+                            if (that._dell.includes(n) || that._dell.includes(that.rename(n)))
+                                continue;
+                            n = that.rename(n)
+                            if (m.length == 1) {
+                                if (Object.keys(j).length > 1)
+                                    delete j[m[0]];
+                                n = n.indexOf('@') > 0 ? that.rename(n.split('@')[0]) : n;
+                                convObj(j, nl(namelist, n), n);
+                            } else {
+                                let nn = n;
+                                if (m.length == 3)
+                                    nn = j[m[2]] === undefined ? n : j[m[2]] + '.' + n;
+                                convObj(j[m[1]], nl(namelist, nn), nn);
+                            }
                         }
                         return;
                     } else {
@@ -387,8 +415,8 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                 return (list[namelist] = obj);
             else if (A.T(obj) == 'object')
                 for (let i in obj)
-                    if (!dell.includes(i))
-                        convObj(obj[i], nl(namelist, i), i);
+                    if (!(that._dell.includes(i) || that._dell.includes(that.rename(i))))
+                        convObj(obj[i], nl(namelist, that.rename(i)), that.rename(i));
         }
 
         function carLocation(obj, lat, long) {
@@ -423,12 +451,12 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
 
     Object.defineProperty(BMWConnectedDrive.prototype, "delete", {
         get: () => this._delete,
-        set: (y) => this._delete = y || this._delete,
+        set: (y) => (this._dell = y.split(',').map(s => s.trim()), this._delete = y || this._delete)
     });
 
     Object.defineProperty(BMWConnectedDrive.prototype, "flatten", {
         get: () => this._flatten,
-        set: (y) => this._flatten = y || this._flatten,
+        set: (y) => (this._flatt = y.split(',').map(s => s.trim()), this._flatten = y || this._flatten)
     });
 
     Object.defineProperty(BMWConnectedDrive.prototype, "arrays", {

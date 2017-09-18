@@ -1,7 +1,7 @@
 {
     "common": {
         "name": "bmw",
-        "version": "1.2.4",
+        "version": "1.3.0",
         "title": "BMW ConnectedDrive data Adapter",
         "desc": {
             "en": "Queries BMW ConnectedDrive data for registered cars in your BMW account",
@@ -22,8 +22,18 @@
         "keywords": [
             "BMW", "ConnectedDrive"
         ],
+        "preserveSettings": "custom",
+        "supportCustoms": true,
         "extIcon": "https://raw.githubusercontent.com/frankjoke/ioBroker.bmw/master/admin/bmw.png",
-        "type": "hardware"
+        "messagebox": true,
+        "subscribe": "messagebox",
+        "type": "hardware",
+        "config": {
+            "minWidth": 640,
+            "width ": 600,
+            "minHeight": 480,
+            "height": 600
+        }
     },
     "native": {
         "scandelay": 60,
@@ -33,7 +43,8 @@
         "services": "efficiency, dynamic, navigation, remote_execution, remote_chargingprofile, remote_history, servicepartner, service, specs, store, map_download",
         "delete": "modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages",
         "flatten": "attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList, remoteServiceEvent, update, storePortfolio",
-        "arrays": "lastTripList|name|lastTrip|unit, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity, remote_history|eventId, storePortfolio|offerCode"
+        "rename": "WBxxxxxxxxxxxxxxx|225x, _DatenNeuLaden|Erneut_Laden, LASTTRIP_RATIO_ELECTRIC_DRIVEN_DISTANCE|Prozent_Elektrisch",
+        "arrays": "lastTripList|name|lastTrip, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|lifeTime, characteristicList|characteristic|quantity, remote_history|eventId, storePortfolio|offerCode"
     },
     "objects": []
 }
