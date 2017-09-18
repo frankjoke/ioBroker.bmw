@@ -60,7 +60,7 @@ function getCars() {
     states[refresh] = true; // don't delete the refresh state!!!
     states[lastok] = true; // don't delete the lastok state!!!
     states[lasterr] = true; // don't delete the lasterr state!!!
-    states[odata] = true;
+    states[odata] = bmw.debug;
     return bmw.requestVehicles()
         .then(() => A.seriesIn(bmw.vehicles, car => A.seriesIn(bmw.vehicles[car], id => {
             if (id.endsWith('_vin_')) return Promise.resolve();
