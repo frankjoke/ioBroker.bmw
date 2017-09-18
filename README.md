@@ -16,7 +16,7 @@ Man kann filtern welche Daten angezeigt werden indem man im Admin die Einstellun
 * Einträge die in ihrer Hirarchie nach oben wandern sollen (bei mir *attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList, update, storePortfolio*)
 * der zu verwendete Datenserver kann auch angegeben werden, der Default ist für den Rest der Welt, wer in anderen Regionen wohnt kann auch <https://b2vapi.bmwgroup.cn:8592> für China, <https://b2vapi.bmwgroup.us> für USA und <https://b2vapi.bmwgroup.com> für Europe / Rest of World probieren. www.bmw-connecteddrive.com wird hoffentlich immer auf den richtigen weitergeleitet.
 * Man kann States umbenennen wenn man im rename **originalName|neuerName** verwendet. weder Original noch der neue Name dürfen mehrmals vorkommen. '.' werden durch '_' ersetzt. Mehrere Einträge von **x|y** werden durch '**,**' getrennt. Damit kann man den Vin des Autos auf z.B. '325i' umbenennen.
-* Der Adapter versteht jetzt auch 'sendTo' Kommandos. `sendTo('bmw.0','send','225xe.Versperren')` würde den Wagen den sie auf 225xe umbenannt haben versperren.
+* Der Adapter versteht jetzt auch 'sendTo' Kommandos. `sendTo('bmw.0','send','225xe.Versperren')` würde den Wagen den sie auf 225xe umbenannt haben versperren, `sendTo('bmw.0','send','_DatenNeuLaden')` fürde einen Refresh ausführen und `sendTo('bmw.0','debug','on')` (es geht auch 0,1,on,off,ein,aus,true,false) würde debug ein- oder ausschalten.
 
 Wenn der Adapter die Position vom Navigationssystem auslesen kann übersetz er diese mit Hilfe von Google auf eine Adresse und gibt diese unter navigation.formatted_address an.
 
@@ -34,8 +34,8 @@ Ab 1.2.0 werden im **debug!**-Mode **_originalData**-States generiert. Wenn ihr 
 ## Changelog
 ### 1.3.0
 * Added renaming of states to the adapter control
-* Added '***sendTo***' capabilities
-* Remote ervices cannot be executed as long as other services are still to be finished
+* Added '***sendTo***' message capabilities
+* Remote services cannot be executed as long as other services are still to be finished
 
 ### 1.2.4
 * added states for last successful donload and error to see how old data is

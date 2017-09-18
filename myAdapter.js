@@ -21,8 +21,10 @@ const slog = (adapter, log, text) => adapter && adapter.log && typeof adapter.lo
     console.log(log + ': ' + text);
 
 function processMessage(obj) {
-    return messages(obj).then(res => res, err => MyAdapter.W(`invalid Message ${MyAdapter.O(obj)} caused error ${MyAdapter.O(err)}`, err))
-        .then(res => obj.callback ? adapter.sendTo(obj.from, obj.command, res, obj.callback) : MyAdapter.D(`Message received from ${obj.from} with command ${obj.command}`))
+    return (obj.command === 'debug' ? Promise.resolve(`debug set to '${inDebug = MyAdapter.parseLogic(obj.message)}'`) : messages(obj))
+        .then(res => MyAdapter.I(`Message from '${obj.from}', command '${obj.command}', message '${obj.message}' executed with result:'${res}'`, res),
+            err => MyAdapter.W(`invalid Message ${MyAdapter.O(obj)} caused error ${MyAdapter.O(err)}`, err))
+        .then(res => obj.callback ? adapter.sendTo(obj.from, obj.command, res, obj.callback) : undefined)
         .then(() => MyAdapter.c2p(adapter.getMessage)().then(obj => obj ? processMessage(obj) : true));
 }
 
@@ -68,7 +70,11 @@ function initAdapter() {
         });
 }
 
-function MyAdapter() {}
+function MyAdapter(adapter, main) {
+    if (adapter && main)
+        MyAdapter.init(adapter, main)
+    return MyAdapter;
+}
 
 MyAdapter.init = function MyAdapterInit(ori_adapter, ori_main) {
     assert(!adapter, `myAdapter:(${ori_adapter.name}) defined already!`);
@@ -114,6 +120,7 @@ MyAdapter.J = function ( /** string */ str, /** function */ reviewer) {
     return res;
 };
 
+MyAdapter.nop = obj => obj;
 MyAdapter.D = (str, val) => (inDebug ?
     slog(adapter, 'info', `<span style="color:darkblue;">debug: ${str}</span>`) :
     slog(adapter, 'debug', str), val !== undefined ? val : str);
@@ -174,8 +181,10 @@ Object.defineProperty(MyAdapter, "C", {
     get: () => adapter.config
 });
 
+MyAdapter.parseLogic = (obj) => ['0', 'off', 'aus', 'false', 'inactive'].includes(obj.toString().trim().toLowerCase()) ? false : ['1', '-1', 'on', 'ein', 'true', 'active'].includes(obj.toString().trim().toLowerCase());
 MyAdapter.clone = (obj) => JSON.parse(JSON.stringify(obj));
 MyAdapter.wait = (time, arg) => new Promise(res => setTimeout(res, time, arg));
+MyAdapter.F = (obj) => obj;
 MyAdapter.O = (obj, level) => util.inspect(obj, false, level || 2, false).replace(/\n/g, ' ');
 MyAdapter.N = (fun) => setTimeout.apply(null, [fun, 0].concat(Array.prototype.slice.call(arguments, 1))); // move fun to next schedule keeping arguments
 MyAdapter.T = (i) => {
@@ -196,6 +205,7 @@ MyAdapter.locDate = (date) => date instanceof Date ?
     new Date(Date.now() - (new Date().getTimezoneOffset()) * 60000);
 MyAdapter.dateTime = (date) => MyAdapter.locDate(date).toISOString().slice(0, -5).replace('T', '@');
 MyAdapter.obToArray = (obj) => (Object.keys(obj).map(i => obj[i]));
+
 MyAdapter.stop = (dostop, callback) => {
     if (stopping) return;
     stopping = true;
@@ -205,7 +215,7 @@ MyAdapter.stop = (dostop, callback) => {
     MyAdapter.D(`Adapter disconnected and stopped with dostop(${dostop}) and callback(${!!callback})`);
     Promise.resolve(unload ? unload(dostop) : null)
         .then(() => callback && callback())
-        .catch(() => MyAdapter.W('catch stop.'))
+        .catch(MyAdapter.W)
         .then(() => dostop ? MyAdapter.E("Adapter will exit in lates 2 sec!", setTimeout(process.exit, 2000, 55)) : null);
 };
 
@@ -235,14 +245,9 @@ MyAdapter.seriesIn = (obj, promfn, delay) => { // fun gets(item,object) and retu
 
 MyAdapter.c2p = (f) => {
     assert(typeof f === 'function', 'c2p (f) error: f is not a function!');
-    if (!f)
-        throw new Error(`f = null in c2pP definition!`);
     return function () {
         const args = Array.prototype.slice.call(arguments);
-        return new Promise((res, rej) => {
-            args.push((err, result) => (err && rej(err)) || res(result));
-            f.apply(this, args);
-        });
+        return new Promise((res, rej) => (args.push((err, result) => (err && rej(err)) || res(result)), f.apply(this, args)));
     };
 };
 
@@ -250,10 +255,7 @@ MyAdapter.c1p = (f) => {
     assert(typeof f === 'function', 'c1p (f) error: f is not a function!');
     return function () {
         const args = Array.prototype.slice.call(arguments);
-        return new Promise((res) => {
-            args.push((result) => res(result));
-            f.apply(this, args);
-        });
+        return new Promise(res => (args.push((result) => res(result)), f.apply(this, args)));
     };
 };
 
@@ -261,15 +263,13 @@ MyAdapter.c1pe = (f) => { // one parameter != null = error
     assert(typeof f === 'function', 'c1pe (f) error: f is not a function!');
     return function () {
         const args = Array.prototype.slice.call(arguments);
-        return new Promise((res, rej) => {
-            args.push((result) => !result ? res(result) : rej(result));
-            f.apply(this, args);
-        });
+        return new Promise((res, rej) => (args.push((result) => !result ? res(result) : rej(result)), f.apply(this, args)));
     };
 };
 
 MyAdapter.retry = (nretry, fn, arg) => {
     assert(typeof fn === 'function', 'retry (,fn,) error: fn is not a function!');
+    nretry = parseInt(nretry);
     return fn(arg).catch(err => {
         if (nretry <= 0)
             throw err;
@@ -277,7 +277,7 @@ MyAdapter.retry = (nretry, fn, arg) => {
     });
 };
 
-MyAdapter.while = (fw, /** function */ fn, time) => {
+MyAdapter.while = (/** function */ fw, /** function */ fn, /** number */ time) => {
     assert(typeof fw === 'function' && typeof fn === 'function', 'retry (fw,fn,) error: fw or fn is not a function!');
     time = parseInt(time) || 1;
     return !fw() ? Promise.resolve(true) :
@@ -286,13 +286,12 @@ MyAdapter.while = (fw, /** function */ fn, time) => {
         .then(() => MyAdapter.while(fw, fn, time));
 };
 
-MyAdapter.repeat = (nretry, fn, arg) => {
+MyAdapter.repeat = (/** number */ nretry, /** function */ fn, arg) => {
     assert(typeof fn === 'function', 'repeat (,fn,) error: fn is not a function!');
-    return fn(arg).then(() => Promise.reject()).catch(() => {
-        if (nretry <= 0)
-            return Promise.resolve();
-        return MyAdapter.repeat(nretry - 1, fn, arg);
-    });
+    nretry = parseInt(nretry);
+    return fn(arg).
+        then(res => Promise.reject(res))
+        .catch(res => nretry <= 0 ? Promise.resolve(res) : MyAdapter.repeat(nretry - 1, fn, arg));
 };
 
 MyAdapter.exec = (command) => {
@@ -372,7 +371,7 @@ MyAdapter.makeState = function (ido, value, ack) {
     //    MyAdapter.I(`will create state:${id} with ${MyAdapter.O(st)}`);
     return MyAdapter.extendObject(id, st, null)
         .then(x => MyAdapter.states[id] = x)
-        .then(() => st.common.state == 'state' ? MyAdapter.changeState(id, value, ack) : Promise.resolve())
+        .then(() => st.common.state == 'state' ? MyAdapter.changeState(id, value, ack) : true)
         .catch(err => MyAdapter.D(`MS ${MyAdapter.O(err)}`, id));
 };
 
