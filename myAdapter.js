@@ -181,7 +181,8 @@ Object.defineProperty(MyAdapter, "C", {
     get: () => adapter.config
 });
 
-MyAdapter.parseLogic = (obj) => ['0', 'off', 'aus', 'false', 'inactive'].includes(obj.toString().trim().toLowerCase()) ? false : ['1', '-1', 'on', 'ein', 'true', 'active'].includes(obj.toString().trim().toLowerCase());
+MyAdapter.parseLogic = (obj) => MyAdapter.includes(['0', 'off', 'aus', 'false', 'inactive'], obj.toString().trim().toLowerCase()) ? 
+    false : MyAdapter.includes(['1', '-1', 'on', 'ein', 'true', 'active'], obj.toString().trim().toLowerCase());
 MyAdapter.clone = (obj) => JSON.parse(JSON.stringify(obj));
 MyAdapter.wait = (time, arg) => new Promise(res => setTimeout(res, time, arg));
 MyAdapter.F = (obj) => obj;
@@ -205,6 +206,18 @@ MyAdapter.locDate = (date) => date instanceof Date ?
     new Date(Date.now() - (new Date().getTimezoneOffset()) * 60000);
 MyAdapter.dateTime = (date) => MyAdapter.locDate(date).toISOString().slice(0, -5).replace('T', '@');
 MyAdapter.obToArray = (obj) => (Object.keys(obj).map(i => obj[i]));
+MyAdapter.includes = function (obj, value) {
+    switch (MyAdapter.T(obj)) {
+        case 'object':
+            return obj[value] !== undefined;
+        case 'array':
+            for (var i of obj)
+                if (i === value)
+                    return true;
+        default:
+            return obj === value;
+    }
+}
 
 MyAdapter.stop = (dostop, callback) => {
     if (stopping) return;
@@ -277,7 +290,7 @@ MyAdapter.retry = (nretry, fn, arg) => {
     });
 };
 
-MyAdapter.while = (/** function */ fw, /** function */ fn, /** number */ time) => {
+MyAdapter.while = ( /** function */ fw, /** function */ fn, /** number */ time) => {
     assert(typeof fw === 'function' && typeof fn === 'function', 'retry (fw,fn,) error: fw or fn is not a function!');
     time = parseInt(time) || 1;
     return !fw() ? Promise.resolve(true) :
@@ -286,11 +299,11 @@ MyAdapter.while = (/** function */ fw, /** function */ fn, /** number */ time) =
         .then(() => MyAdapter.while(fw, fn, time));
 };
 
-MyAdapter.repeat = (/** number */ nretry, /** function */ fn, arg) => {
+MyAdapter.repeat = ( /** number */ nretry, /** function */ fn, arg) => {
     assert(typeof fn === 'function', 'repeat (,fn,) error: fn is not a function!');
     nretry = parseInt(nretry);
     return fn(arg).
-        then(res => Promise.reject(res))
+    then(res => Promise.reject(res))
         .catch(res => nretry <= 0 ? Promise.resolve(res) : MyAdapter.repeat(nretry - 1, fn, arg));
 };
 
