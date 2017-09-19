@@ -7,10 +7,10 @@
 "use strict";
 const utils = require('./lib/utils'); // Get common adapter utils
 const adapter = utils.adapter('bmw');
-const A = require('./myAdapter');
+const MyAdapter = require('./myAdapter');
 const BMWConnectedDrive = require('./connectedDrive');
-
-const bmw = new BMWConnectedDrive(A.init(adapter, main));
+const A = MyAdapter(adapter,main);
+const bmw = new BMWConnectedDrive();
 
 let progress = false;
 
@@ -41,11 +41,10 @@ A.messages = (msg) => {
                         from: msg.from
                     }) : Promise.reject(A.W(`wrong send ${A.O(msg)} obj = ${A.O(obj)}`)),
                     err => Promise.reject(err))
-                .then(what => (A.D(`got message send: ${A.O(what)}`)));
+                .then(() => A.D(`got message sent: ${msg.message}`));
         default:
-            break;
+            return Promise.reject(A.D(`Invalid command '${msg.command} received with message ${A.O(msg)}`));
     }
-    return Promise.reject(`Wrong Message command ${msg.command}`);
 };
 
 function getCars() {
@@ -61,7 +60,7 @@ function getCars() {
     states[refresh] = true; // don't delete the refresh state!!!
     states[lastok] = true; // don't delete the lastok state!!!
     states[lasterr] = true; // don't delete the lasterr state!!!
-    states[odata] = true;
+    states[odata] = A.debug;
     return bmw.requestVehicles()
         .then(() => A.seriesIn(bmw.vehicles, car => A.seriesIn(bmw.vehicles[car], id => {
             if (id.endsWith('_vin_')) return Promise.resolve();

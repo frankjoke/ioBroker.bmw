@@ -165,7 +165,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                 let vp = i.split('|').map(s => s.trim().replace(/\./g, '_'));
                 if (vp.length !== 2) A.W(`rename config error: need always from|to pairs separated by '|'! which is not true for ${i}!`);
                 else {
-                    if (that._rename.hasOwnProperty(vp[0]) || that._rename.hasOwnProperty(vp[1]))
+                    if (A.includes(that._rename, vp[0]) || A.includes(that._rename, vp[1]))
                         A.W(`rename config error: names should not be used twice (on any side od rename, ${vp[0]} or ${vp[1]} was used already!`);
                     else {
                         that._rename[vp[0]] = vp[1];
@@ -371,7 +371,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
             arrs = {};
 
         function nl(list, n) {
-            return that._flatt.includes(n) || that._flatt.includes(that.rename(n)) ? list : (list != '' ? list + '.' : '') + n;
+            return A.includes(that._flatt, n) || A.includes(that._flatt, that.rename(n)) ? list : (list != '' ? list + '.' : '') + n;
         }
 
         function convObj(obj, namelist, last) {
@@ -382,10 +382,10 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                 else {
                     //                A.D(`${last}: ${arrs[last]} = ${A.O(obj)}`);
                     if (arrs[last] || arrs[that.rename(last)]) {
-                        let m = arrs.hasOwnProperty(last) ? arrs[last] : arrs[that.rename(last)];
+                        let m = A.includes(arrs, last) ? arrs[last] : arrs[that.rename(last)];
                         for (let j of obj) {
                             let n = j[m[0]];
-                            if (that._dell.includes(n) || that._dell.includes(that.rename(n)))
+                            if (A.includes(that._dell, n) || A.includes(that._dell, that.rename(n)))
                                 continue;
                             n = that.rename(n)
                             if (m.length == 1) {
@@ -415,7 +415,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                 return (list[namelist] = obj);
             else if (A.T(obj) == 'object')
                 for (let i in obj)
-                    if (!(that._dell.includes(i) || that._dell.includes(that.rename(i))))
+                    if (!(A.includes(that._dell, i) || A.includes(that._dell, that.rename(i))))
                         convObj(obj[i], nl(namelist, that.rename(i)), that.rename(i));
         }
 
