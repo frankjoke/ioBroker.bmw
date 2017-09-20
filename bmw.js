@@ -9,7 +9,7 @@ const utils = require('./lib/utils'); // Get common adapter utils
 const adapter = utils.adapter('bmw');
 const MyAdapter = require('./myAdapter');
 const BMWConnectedDrive = require('./connectedDrive');
-const A = MyAdapter(adapter,main);
+const A = MyAdapter(adapter, main);
 const bmw = new BMWConnectedDrive();
 
 let progress = false;
@@ -29,11 +29,11 @@ A.stateChange = function (id, state) {
 };
 
 A.messages = (msg) => {
+    const id = A.T(msg.message) === 'string' && msg.message.startsWith(A.ain) ? msg.message.slice(A.ain.length) : msg.message;
+    A.D(`Execute command "${msg.command}" with Message ${A.S(id)}`);
     switch (msg.command) {
         case 'send':
-            const id = A.T(msg.message) === 'string' && msg.message.startsWith(A.ain) ? msg.message.slice(A.ain.length) : msg.message;
             if (!id || !(id in A.states)) return Promise.reject(`id not found ${id}`);
-            A.D(`Execute Message ${A.O(id)}`);
             return A.getObject(id)
                 .then(obj =>
                     obj.common.role === 'button' ? A.stateChange(id, {
@@ -42,6 +42,8 @@ A.messages = (msg) => {
                     }) : Promise.reject(A.W(`wrong send ${A.O(msg)} obj = ${A.O(obj)}`)),
                     err => Promise.reject(err))
                 .then(() => A.D(`got message sent: ${msg.message}`));
+        case 'get':
+            return A.getState(id);
         default:
             return Promise.reject(A.D(`Invalid command '${msg.command} received with message ${A.O(msg)}`));
     }
@@ -97,12 +99,11 @@ function getCars() {
         }, 10)))
         .then(() => bmw.ocardata ? A.makeState(odata, `${bmw.ocardata}`) : true)
         .then(() => A.makeState(lastok, `${A.dateTime(new Date())}`, A.I(`BMW updated car data for ${A.obToArray(bmw.vehicles).length} car(s)`, true)))
-        .then(() => A.getObjectList({ // this check object list for old objects not transmitted anymore
+        .then(() => bmw.cleanup ? A.getObjectList({ // this check object list for old objects not transmitted anymore
             startkey: A.ain,
             endkey: A.ain + '\u9999'
-        }))
-        .then(res => A.seriesOf(res.rows, item => states[item.id.slice(A.ain.length)] ? Promise.resolve() :
-            A.D(`Delete unneeded state ${A.O(item)}`, A.removeState(item.id.slice(A.ain.length))), 2))
+        }).then(res => A.seriesOf(res.rows, item => states[item.id.slice(A.ain.length)] ? Promise.resolve() :
+            A.D(`Delete unneeded state ${A.O(item)}`, A.removeState(item.id.slice(A.ain.length))), 2)) : true)
         .catch(err => A.W(`Error in GetCars, most probably the server is down! No data is changed:  ${err}`,
             A.makeState(lasterr, `${A.dateTime(new Date())}: ${A.O(err)}`, true)))
         .then(() => progress = false);

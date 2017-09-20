@@ -75,6 +75,10 @@
             "de": "Alle alten Objeke dieser Instanz beim Adapterstart löschen?",
             "en": "Delete all old object for this adapter incance?"
         },
+        "Cleanup:": {
+            "de": "Alle Daten löschen die beim neu laden fehler gebracht haben?",
+            "en": "Delete all objects which cased an error on download?"
+        },
     };
 
     function setValue(id, value, onChange) {
@@ -164,10 +168,12 @@
         </tr>
         <!--        <tr><td class="translate">Force init:</td><td><input class="value" id="forceinit" type="checkbox"/></td></tr> -->
     </table>
+    <p><span class="translate">Force init:</span><input class="value" id="forceinit" type="checkbox"/><br></p>
+    <p><span class="translate">Cleanup:</span><input class="value" id="cleanup" type="checkbox"/><br></p>
     <p><span class="translate">Services:</span> <textarea class="value" id="services" style="width:90%;height:30px"></textarea><br></p>
     <p><span class="translate">Delete:</span><textarea class="value" id="delete" style="width:90%;height:60px"></textarea><br></p>
     <p><span class="translate">Flatten:</span><textarea class="value" id="flatten" style="width:90%;height:40px"></textarea><br></p>
-    <p><span class="translate">Arrays:</span><textarea class="value" id="arrays" style="width:90%;height:40px"></textarea><br></p>
+    <p><span class="translate">Arrays:</span><textarea class="value" id="arrays" style="width:90%;height:60px"></textarea><br></p>
     <p><span class="translate">Rename:</span><textarea class="value" id="rename" style="width:90%;height:40px"></textarea><br></p>
 </div>
 

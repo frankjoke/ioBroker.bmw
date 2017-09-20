@@ -1,7 +1,7 @@
 {
     "common": {
         "name": "bmw",
-        "version": "1.3.0",
+        "version": "1.3.1",
         "title": "BMW ConnectedDrive data Adapter",
         "desc": {
             "en": "Queries BMW ConnectedDrive data for registered cars in your BMW account",
@@ -30,9 +30,9 @@
         "type": "hardware",
         "config": {
             "minWidth": 640,
-            "width ": 600,
-            "minHeight": 480,
-            "height": 600
+            "width ": 640,
+            "minHeight": 600,
+            "height": 700
         }
     },
     "native": {
@@ -40,6 +40,8 @@
         "server": "www.bmw-connecteddrive.com",
         "username": "email/usename",
         "password": "password",
+        "cleanup": false,
+        "forceinit": true,
         "services": "efficiency, dynamic, navigation, remote_execution, remote_chargingprofile, remote_history, servicepartner, service, specs, store, map_download",
         "delete": "modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages",
         "flatten": "attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList, remoteServiceEvent, update, storePortfolio",
