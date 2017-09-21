@@ -16,7 +16,8 @@ Man kann filtern welche Daten angezeigt werden indem man im Admin die Einstellun
 * Einträge die in ihrer Hirarchie nach oben wandern sollen (bei mir *attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList, update, storePortfolio*)
 * der zu verwendete Datenserver kann auch angegeben werden, der Default ist für den Rest der Welt, wer in anderen Regionen wohnt kann auch <https://b2vapi.bmwgroup.cn:8592> für China, <https://b2vapi.bmwgroup.us> für USA und <https://b2vapi.bmwgroup.com> für Europe / Rest of World probieren. www.bmw-connecteddrive.com wird hoffentlich immer auf den richtigen weitergeleitet.
 * Man kann States umbenennen wenn man im rename **originalName|neuerName** verwendet. weder Original noch der neue Name dürfen mehrmals vorkommen. '.' werden durch '_' ersetzt. Mehrere Einträge von **x|y** werden durch '**,**' getrennt. Damit kann man den Vin des Autos auf z.B. '325i' umbenennen.
-* Der Adapter versteht jetzt auch 'sendTo' Kommandos. `sendTo('bmw.0','send','225xe.Versperren')` würde den Wagen den sie auf 225xe umbenannt haben versperren, `sendTo('bmw.0','send','_DatenNeuLaden')` fürde einen Refresh ausführen und `sendTo('bmw.0','debug','on')` (es geht auch 0,1,on,off,ein,aus,true,false) würde debug ein- oder ausschalten.
+* Der Adapter versteht jetzt auch 'sendTo' Kommandos. `sendTo('bmw.0','send','225xe.Versperren')` würde den Wagen den sie auf 225xe umbenannt haben versperren, `sendTo('bmw.0','send','_DatenNeuLaden')` würde einen Refresh ausführen und `sendTo('bmw.0','debug','on')` (es geht auch 0,1,on,off,ein,aus,true,false) würde debug ein- oder ausschalten. Mit `sendTo('bmw.0','get', '225xe.Versperren')` kann der state von Werten abgefragt werden, man bekommt z.B. `{ val: 'Nicht gestartet', ack: true, ts: 1505839335870, q: 0, from: 'system.adapter.bmw.0', lc: 1505839335870 }` zurück.
+* Im config kann man jetzt 2 flags setzten: Alle Daten bei Adapter-Neustart löschen (default:ein) und alle Daten die bei einem wiederholten download nicht mehr runtergeladen werden löschen (default:aus). Damit kann man bei Adapter-Restart mit anderen settings die alten states vergessen aber wenn ein Kommunikationsfehler wärend eines refresh's entsteht die Daten vom letzten refresh sehen wenn der 2. Haken nicht gesetzt wird.
 
 Wenn der Adapter die Position vom Navigationssystem auslesen kann übersetz er diese mit Hilfe von Google auf eine Adresse und gibt diese unter navigation.formatted_address an.
 
@@ -32,6 +33,9 @@ Ab 1.2.0 werden im **debug!**-Mode **_originalData**-States generiert. Wenn ihr 
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
+### 1.3.1
+* Added flags in config to clear all data on adapter restart and to clear data not downloaded on every download
+
 ### 1.3.0
 * Added renaming of states to the adapter control
 * Added '***sendTo***' message capabilities

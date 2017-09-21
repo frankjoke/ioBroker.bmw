@@ -27,6 +27,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
     this._flatten = "attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList, remoteServiceEvent";
     this._arrays = "lastTripList|name|lastTrip|unit, specs|key|value, service|name|services, cdpFeatures|name|status, cbsMessages|text|date, lifeTimeList|name|value, characteristicList|characteristic|quantity, remote_history|eventId";
     this._retry = false;
+    this._clean = false;
     this._dell = [];
     this._flatt = [];
 
@@ -156,6 +157,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
         that._delete = options.delete || that._delete;
         that._flatten = options.flatten || that._flatten;
         that._arrays = options.arrays || that._arrays;
+        that._clean = options.cleanup || that._clean;
         that._lang = options.lang || 'de';
         if (!translateText[that._lang])
             that._lang = 'en';
@@ -350,7 +352,7 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
                 .catch(e => A.W(`RequestServiceData Error ${e} for ${_type+end} with result: ${A.O(tres)}`, Promise.resolve()));
         }
 
-        return A.seriesOf(that._services.split(',').map(x => x.trim()), requestVehicleData, 50)
+        return A.seriesOf(that._services.split(',').map(x => x.trim()), requestVehicleData, 2)
             .then(() => convert(carData))
             .then(car => that._vehicles[that.rename(car._vin_ = carData.vin)] = A.I(`BMW car ${carData.vin} with ${Object.keys(car).length} data points received`, car)); // .catch(e => A.W(`RequestVehicleData Error ${e}`));
     }
@@ -447,6 +449,11 @@ function BMWConnectedDrive() { // can be (username,password,server) or ({usernam
     Object.defineProperty(BMWConnectedDrive.prototype, "services", {
         get: () => this._services,
         set: (y) => this._services = y || this._services,
+    });
+
+    Object.defineProperty(BMWConnectedDrive.prototype, "cleanup", {
+        get: () => this._clean,
+        set: (y) => this._clean = A.parseLogic(y)
     });
 
     Object.defineProperty(BMWConnectedDrive.prototype, "delete", {
