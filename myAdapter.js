@@ -1,9 +1,9 @@
 /**
- *      iobroker MyAdapter class
+ *      iobroker MyAdapter class 1.0.0 from bmw
  *      (c) 2016- <frankjoke@hotmail.com>
  *      MIT License
  */
-// jshint es6: true, node: true, esversion: 6, strict: global, undef: true, unused: true
+// jshint  node: true,  undef: true, unused: true
 "use strict";
 const util = require('util'),
     http = require('http'),
@@ -73,7 +73,7 @@ function initAdapter() {
 
 function MyAdapter(adapter, main) {
     if (adapter && main)
-        MyAdapter.init(adapter, main)
+        MyAdapter.init(adapter, main);
     return MyAdapter;
 }
 
@@ -89,9 +89,9 @@ MyAdapter.init = function MyAdapterInit(ori_adapter, ori_main) {
     MyAdapter.setForeignObject = MyAdapter.c2p(adapter.setForeignObject);
     MyAdapter.getForeignObjects = MyAdapter.c2p(adapter.getForeignObjects);
     MyAdapter.getObject = MyAdapter.c2p(adapter.getObject);
-    MyAdapter.deleteState = (id) => MyAdapter.c1pe(adapter.deleteState)(id).catch(res => res == 'Not exists' ? Promise.resolve() : Promise.reject(res));
-    MyAdapter.delObject = (id, opt) => MyAdapter.c1pe(adapter.delObject)(id, opt).catch(res => res == 'Not exists' ? Promise.resolve() : Promise.reject(res));
-    MyAdapter.delState = (id, opt) => MyAdapter.c1pe(adapter.delState)(id, opt).catch(res => res == 'Not exists' ? Promise.resolve() : Promise.reject(res));
+    MyAdapter.deleteState = (id) => MyAdapter.c1pe(adapter.deleteState)(id).catch(res => res === 'Not exists' ? Promise.resolve() : Promise.reject(res));
+    MyAdapter.delObject = (id, opt) => MyAdapter.c1pe(adapter.delObject)(id, opt).catch(res => res === 'Not exists' ? Promise.resolve() : Promise.reject(res));
+    MyAdapter.delState = (id, opt) => MyAdapter.c1pe(adapter.delState)(id, opt).catch(res => res === 'Not exists' ? Promise.resolve() : Promise.reject(res));
     MyAdapter.removeState = (id, opt) => MyAdapter.delState(id, opt).then(() => MyAdapter.delObject((delete MyAdapter.states[id], id), opt));
     MyAdapter.setObject = MyAdapter.c2p(adapter.setObject);
     MyAdapter.createState = MyAdapter.c2p(adapter.createState);
@@ -102,7 +102,7 @@ MyAdapter.init = function MyAdapterInit(ori_adapter, ori_main) {
         .on('unload', (callback) => MyAdapter.stop(false, callback))
         .on('ready', () => initAdapter().then(main))
         .on('objectChange', (id, obj) => obj && obj._id && objChange ? objChange(id, obj) : null)
-        .on('stateChange', (id, state) => state && state.from != 'system.adapter.' + MyAdapter.ains && stateChange ?
+        .on('stateChange', (id, state) => state && state.from !== 'system.adapter.' + MyAdapter.ains && stateChange ?
             stateChange(MyAdapter.D(`stateChange called for ${id} = ${MyAdapter.O(state)}`, id), state) : null);
 
     return that;
@@ -197,7 +197,7 @@ MyAdapter.T = (i,j) => {
         else if (i instanceof RegExp) t = 'regexp';
         else if (i === null) t = 'null';
     } else if (t === 'number' && isNaN(i)) t = 'NaN';
-    return j === undefined ? t : MyAdapter.T(j) == t;
+    return j === undefined ? t : MyAdapter.T(j) === t;
 };
 MyAdapter.locDate = (date) => date instanceof Date ?
     new Date(date.getTime() - date.getTimezoneOffset() * 60000) :
@@ -216,10 +216,11 @@ MyAdapter.includes = function (obj, value) {
             for (var i of obj)
                 if (i === value)
                     return true;
-        default:
+			/* falls through */
+            default:
             return obj === value;
     }
-}
+};
 
 MyAdapter.stop = (dostop, callback) => {
     if (stopping) return;
@@ -325,7 +326,7 @@ MyAdapter.exec = (command) => {
 
 MyAdapter.get = (url, retry) => { // get a web page either with http or https and return a promise for the data, could be done also with request but request is now an external package and http/https are part of nodejs.
     const fun = typeof url === 'string' && url.trim().toLowerCase().startsWith('https') ||
-        url.protocol == 'https' ? https.get : http.get;
+        url.protocol === 'https' ? https.get : http.get;
     return (new Promise((resolve, reject) => {
         fun(url, (res) => {
             if (res.statusCode !== 200) {
@@ -346,7 +347,7 @@ MyAdapter.changeState = function (id, value, ack, always) {
     always = always === undefined ? false : !!always;
     ack = ack === undefined ? true : !!ack;
     return MyAdapter.getState(id)
-        .then(st => st && !always && st.val == value && st.ack == ack ? Promise.resolve() : MyAdapter.setState(id, value, ack))
+        .then(st => st && !always && st.val === value && st.ack === ack ? Promise.resolve() : MyAdapter.setState(id, value, ack))
         .catch(err => MyAdapter.W(`Error in MyAdapter.setState(${id},${value},${ack}): ${err}`, MyAdapter.setState(id, value, ack)));
 };
 
@@ -377,16 +378,16 @@ MyAdapter.makeState = function (ido, value, ack) {
         _id: id
     };
     for (let i in ido)
-        if (i == 'native') {
+        if (i === 'native') {
             st.native = st.native || {};
             for (let j in ido[i])
                 st.native[j] = ido[i][j];
-        } else if (i != 'id' && i != 'val')
+        } else if (i !== 'id' && i !== 'val')
         st.common[i] = ido[i];
     //    MyAdapter.I(`will create state:${id} with ${MyAdapter.O(st)}`);
     return MyAdapter.extendObject(id, st, null)
         .then(x => MyAdapter.states[id] = x)
-        .then(() => st.common.state == 'state' ? MyAdapter.changeState(id, value, ack) : true)
+        .then(() => st.common.state === 'state' ? MyAdapter.changeState(id, value, ack) : true)
         .catch(err => MyAdapter.D(`MS ${MyAdapter.O(err)}`, id));
 };
 
