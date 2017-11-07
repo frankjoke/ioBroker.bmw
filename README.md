@@ -33,6 +33,9 @@ Ab 1.2.0 werden im **debug!**-Mode **_originalData**-States generiert. Wenn ihr 
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
+### 1.3.2
+* Just removed 'preserveSettings' and 'supportCustoms' not to show up in admin custom config
+
 ### 1.3.1
 * Added flags in config to clear all data on adapter restart and to clear data not downloaded on every download
 
