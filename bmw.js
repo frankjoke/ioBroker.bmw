@@ -6,7 +6,7 @@
 // jshint node:true, esversion:6, strict:global, undef:true, unused:true
 "use strict";
 const utils = require('./lib/utils'); // Get common adapter utils
-const adapter = utils.adapter('bmw');
+const adapter = utils.Adapter('bmw');
 const MyAdapter = require('./myAdapter');
 const BMWConnectedDrive = require('./connectedDrive');
 const A = MyAdapter(adapter, main);
