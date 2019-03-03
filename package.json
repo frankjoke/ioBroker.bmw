@@ -30,7 +30,8 @@
     "grunt-http": "^2.2.0",
     "grunt-jscs": "^3.0.1",
     "grunt-replace": "^1.0.1",
-    "mocha": "^4.1.0"
+    "mocha": "^4.1.0",
+    "@iobroker/adapter-core": "^1.0.3"
   },
   "directories": {
     "doc": "doc",
