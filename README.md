@@ -1,6 +1,6 @@
 # ![Logo](admin/bmw.png) Adapter für BMW ConnectedDrive-Daten
 
-[![NPM version](http://img.shields.io/npm/v/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
+![Number of Installations](http://iobroker.live/badges/bmw-installed.svg) ![Number of Installations](http://iobroker.live/badges/bmw-stable.svg) [![NPM version](http://img.shields.io/npm/v/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 [![Downloads](https://img.shields.io/npm/dm/iobroker.bmw.svg)](https://www.npmjs.com/package/iobroker.bmw)
 **Tests:** Linux/Mac: [![Travis-CI](http://img.shields.io/travis/frankjoke/ioBroker.bmw/master.svg)](https://travis-ci.org/frankjoke/ioBroker.bmw)
 Windows: [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/frankjoke/ioBroker.bmw?branch=master&svg=true)](https://ci.appveyor.com/project/frankjoke/ioBroker-bmw/)
