@@ -1,0 +1,148 @@
+<html>
+
+<head>
+    <!-- Load ioBroker scripts and styles-->
+    <link rel="stylesheet" type="text/css" href="../../css/adapter.css" />
+    <link rel="stylesheet" type="text/css" href="../../lib/css/materialize.css">
+
+    <script type="text/javascript" src="../../lib/js/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="../../socket.io/socket.io.js"></script>
+
+    <script type="text/javascript" src="../../js/translate.js"></script>
+    <script type="text/javascript" src="../../lib/js/materialize.js"></script>
+    <script type="text/javascript" src="../../js/adapter-settings.js"></script>
+
+    <!-- Load our own files -->
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <script type="text/javascript" src="words.js"></script>
+
+    <script type="text/javascript">
+      // This will be called by the admin adapter when the settings page loads
+      function load(settings, onChange) {
+          // example: select elements with id=key and class=value and insert value
+          if (!settings) return;
+          $('.value').each(function () {
+              var $key = $(this);
+              var id = $key.attr('id');
+              if ($key.attr('type') === 'checkbox') {
+                  // do not call onChange direct, because onChange could expect some arguments
+                  $key.prop('checked', settings[id])
+                      .on('change', () => onChange())
+                      ;
+              } else {
+                  // do not call onChange direct, because onChange could expect some arguments
+                  $key.val(settings[id])
+                      .on('change', () => onChange())
+                      .on('keyup', () => onChange())
+                      ;
+              }
+          });
+          onChange(false);
+          // reinitialize all the Materialize labels on the page if you are dynamically adding inputs:
+          if (M) M.updateTextFields();
+      }
+
+      // This will be called by the admin adapter when the user presses the save button
+      function save(callback) {
+          // example: select elements with class=value and build settings object
+          var obj = {};
+          $('.value').each(function () {
+              var $this = $(this);
+              if ($this.attr('type') === 'checkbox') {
+                  obj[$this.attr('id')] = $this.prop('checked');
+              } else {
+                  obj[$this.attr('id')] = $this.val();
+              }
+          });
+          callback(obj);
+      }
+  </script>
+</head>
+
+
+<body>
+  <!-- you have to put your config page in a div with id adapter-container -->
+  <div class="m adapter-container">
+
+    <div class="row">
+      <div class="col s5">
+        <p class="flow-text translate">bmw adapter settings</h4>
+      </div>
+      <div class="input-field col s1">
+        <img src="bmw.png" class="logo">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col s12 m6 l3">
+        <label class="translate" for="scandelay">Scan Delay:</label>
+        <input class="value number" id="scandelay" min="5" max="600" type="number" />
+      </div>
+      <div class="col s12 m6 l3">
+        <label class="translate" for="server">Server:</label>
+        <input class="value" id="server" type="text" />
+      </div>
+      <div class="input-field col s12 m6 l3">
+        <label class="translate" for="username">username:</label>
+        <input id="username" type="text" data-crypt="0" size="40" class="value" />
+      </div>
+      <div class="input-field col s12 m6 l3">
+        <label class="translate" for="password">Password:</label>
+        <input id="password" type="password" data-crypt="0" size="30" class="value" />
+      </div>
+      <div class="col s12 m6 l3">
+        <input class="value" id="forceinit" type="checkbox" />
+        <label class="translate" for="foceinit">Force init:</label>
+      </div>
+      <div class="col s12 m6 l3">
+        <input class="value" id="cleanup" type="checkbox" />
+        <label class="translate" for="cleanup">Cleanup:</label>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col s12">
+        <br><br>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="input-field col s12 m12 l12">
+        <textarea id="services" class="value materialize-textarea" style="height: 80px; resize: vertical;"></textarea>
+        <label for="services" class="translate">Services:</label>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="input-field col s12 m12 l12">
+        <textarea id="delete" class="value materialize-textarea" style="height: 80px; resize: vertical;"></textarea>
+        <label for="delete" class="translate">Delete:</label>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="input-field col s12 m12 l12">
+        <textarea id="flatten" class="value materialize-textarea" style="height: 80px; resize: vertical;"></textarea>
+        <label for="flatten" class="translate">Flatten:</label>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="input-field col s12 m12 l12">
+        <textarea id="arrays" class="value materialize-textarea" style="height: 80px; resize: vertical;"></textarea>
+        <label for="arrays" class="translate">Arrays:</label>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="input-field col s12 m12 l12">
+        <textarea id="rename" class="value materialize-textarea" style="height: 80px; resize: vertical;"></textarea>
+        <label for="rename" class="translate">Rename:</label>
+      </div>
+    </div>
+
+  </div>
+  </div>
+</body>
+
+</html>

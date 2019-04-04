@@ -5,11 +5,12 @@
  */
 // jshint node:true, esversion:6, strict:global, undef:true, unused:true
 "use strict";
-const utils = require('@iobroker/adapter-core'); // Get common adapter utils
-const adapter = utils.Adapter('bmw');
-const MyAdapter = require('./myAdapter');
+//const utils = require('@iobroker/adapter-core'); // Get common adapter utils
+//const adapter = utils.Adapter('bmw');
+//const MyAdapter = require('./myAdapter');
+const A = require('@frankjoke/myadapter').MyAdapter;
 const BMWConnectedDrive = require('./connectedDrive');
-const A = MyAdapter(adapter, main);
+//const A = MyAdapter(adapter, main);
 const bmw = new BMWConnectedDrive();
 
 let progress = false;
@@ -109,30 +110,34 @@ function getCars() {
         .then(() => progress = false);
 }
 
+A.init(module, 'bmw', main); // associate adapter and main with MyAdapter
+
 function main() {
-    if (!adapter.config.scandelay || parseInt(adapter.config.scandelay) < 5)
-        A.W(`BMW Adapter scan delay was ${adapter.config.scandelay} set to 5 min!`, adapter.config.scandelay = 5);
-    A.scanDelay = parseInt(adapter.config.scandelay) * 60 * 1000; // minutes
+    if (!A.C.scandelay || parseInt(A.C.scandelay) < 5)
+        A.W(`BMW Adapter scan delay was ${A.C.scandelay} set to 5 min!`, A.C.scandelay = 5);
+    let scanDelay = parseInt(A.C.scandelay) * 60 * 1000; // minutes
 
-    adapter.config.server = A.T(adapter.config.server) == 'string' && adapter.config.server.length > 10 ? adapter.config.server : 'www.bmw-connecteddrive.com';
+    if (typeof A.C.server === 'string' && A.C.server.trim().endsWith('!')) {
+        A.debug = true;
+        A.C.server = A.C.server.trim().slice(0, -1).trim();
+    }
 
-    if ((A.debug = adapter.log.level == 'debug' || adapter.config.services.startsWith('debug!')))
-        A.D(`Adapter will run in debug mode because 'debug!' flag as first letters in services!`,
-            adapter.config.services = adapter.config.services.startsWith('debug!') ?
-            adapter.config.services.slice(6) :
-            adapter.config.services);
+    if (!A.C.server || typeof A.C.server !== 'string' || A.C.server.length < 10)
+        A.C.server = 'www.bmw-connecteddrive.com';
+    else
+        A.C.server = A.C.server.trim();
 
-    A.I(`BMW will scan the following services: ${adapter.config.services}.`);
+    A.I(`BMW will scan the following services: ${A.C.services}.`);
 
     A.wait(100) // just wait a bit to give other background a chance to complete as well.
-        .then(() => bmw.initialize(adapter.config))
+        .then(() => bmw.initialize(A.C))
         .then(() => A.makeState({
             id: bmw.renameTranslate('_RefreshData'),
             'write': true,
             role: 'button',
             type: typeof true
         }, false))
-        .then(() => getCars(A.scanTimer = setInterval(getCars, A.scanDelay)))
-        .then(() => A.I(`BMW Adapter initialization finished, will scan ConnectedDrive every ${adapter.config.scandelay} minutes.`),
+        .then(() => getCars(A.timer = setInterval(getCars, scanDelay)))
+        .then(() => A.I(`BMW Adapter initialization finished, will scan ConnectedDrive every ${A.C.scandelay} minutes.`),
             err => A.W(`BMW initialization finished with error ${err}, will stop adapter!`, A.stop(true)));
 }

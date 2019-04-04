@@ -10,7 +10,8 @@
 const https = require('https');
 const querystring = require('querystring');
 const assert = require('assert');
-const A = require('./myAdapter');
+const A = require('@frankjoke/myadapter').MyAdapter;
+
 
 function BMWConnectedDrive() { // can be (username,password,server) or ({username:'x',password:'y',server:'z', array,flatten,delete, })
     if (!(this instanceof BMWConnectedDrive)) return new BMWConnectedDrive();

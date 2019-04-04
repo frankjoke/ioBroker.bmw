@@ -1,11 +1,17 @@
 {
     "common": {
         "name": "bmw",
-        "version": "1.3.3",
+        "version": "1.4.0",
         "title": "BMW ConnectedDrive data Adapter",
         "desc": {
             "en": "Queries BMW ConnectedDrive data for registered cars in your BMW account",
             "de": "Fragt BMW ConnectedDrive Daten der registrierten Autos auf ihrem BMW account ab."
+        },
+        "news": {
+            "1.4.0": {
+                "en": "changed adapter for Admin V3 and also incorporated changes in readme and Konfig",
+                "de": "Adaptzer auf Admin3 und neuen Tests upgedated sowie Änderungen im Readme und Konfig"
+            }
         },
         "authors": [
             "frankjoke <frankjoke@hotmail.com>"
@@ -23,7 +29,8 @@
             "BMW", "ConnectedDrive"
         ],
         "preserveSettings": null,
-        "supportCustoms": false,        
+        "supportCustoms": false,  
+        "materialize": true,     
         "extIcon": "https://raw.githubusercontent.com/frankjoke/ioBroker.bmw/master/admin/bmw.png",
         "messagebox": true,
         "subscribe": "messagebox",
