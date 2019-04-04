@@ -34,6 +34,10 @@ Ab 1.2.0 werden im **debug!**-Mode **_originalData**-States generiert. Wenn ihr 
 * Adapter requires node >= v4.3.*!
 
 ## Changelog
+
+### 1.4.0
+* Update for Admin 3,0 and compact mode as well as config page
+
 ### 1.3.3
 * Just removed 'preserveSettings' and 'supportCustoms' not to show up in admin custom config
 
