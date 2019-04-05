@@ -13,6 +13,7 @@
                 "de": "Adaptzer auf Admin3 und neuen Tests upgedated sowie Änderungen im Readme und Konfig"
             }
         },
+        "compact": true,
         "authors": [
             "frankjoke <frankjoke@hotmail.com>"
         ],
