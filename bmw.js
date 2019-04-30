@@ -34,7 +34,7 @@ A.messages = (msg) => {
     A.D(`Execute command "${msg.command}" with Message ${A.S(id)}`);
     switch (msg.command) {
         case 'send':
-            if (!id || !(id in A.states)) return Promise.reject(`id not found ${id}`);
+            if (!id || !(id in A.states || A.ain+id in A.states)) return Promise.reject(`id not found ${id}`);
             return A.getObject(id)
                 .then(obj =>
                     obj.common.role === 'button' ? A.stateChange(id, {
@@ -117,10 +117,8 @@ function main() {
         A.W(`BMW Adapter scan delay was ${A.C.scandelay} set to 5 min!`, A.C.scandelay = 5);
     let scanDelay = parseInt(A.C.scandelay) * 60 * 1000; // minutes
 
-    if (typeof A.C.server === 'string' && A.C.server.trim().endsWith('!')) {
+    if (A.C.debug)
         A.debug = true;
-        A.C.server = A.C.server.trim().slice(0, -1).trim();
-    }
 
     if (!A.C.server || typeof A.C.server !== 'string' || A.C.server.length < 10)
         A.C.server = 'www.bmw-connecteddrive.com';

@@ -1,16 +1,32 @@
 {
     "common": {
         "name": "bmw",
-        "version": "1.4.0",
+        "version": "1.4.1",
         "title": "BMW ConnectedDrive data use",
         "desc": {
             "en": "Queries BMW ConnectedDrive data for registered cars in your BMW account",
-            "de": "Fragt BMW ConnectedDrive Daten der registrierten Autos auf ihrem BMW account ab."
+            "de": "Fragt BMW ConnectedDrive Daten der registrierten Autos auf ihrem BMW account ab.",
+            "ru": "Запросы данных от BMW ConnectedDrive для зарегистрированных автомобилей на BMW счете",
+            "pt": "Consultas BMW ConnectedDrive dados para carros registrados na sua conta BMW",
+            "nl": "Query 's BMW ConnectedDrive gegevens voor geregistreerde auto' s in uw BMW account",
+            "fr": "Les requêtes de BMW ConnectedDrive données pour les voitures immatriculées en compte de votre BMW",
+            "it": "Query di BMW ConnectedDrive dati registrati per le macchine BMW account",
+            "es": "Consultas de BMW ConnectedDrive de datos de vehículos registrados en su cuenta de BMW",
+            "pl": "Żądania danych od BMW ConnectedDrive dla zarejestrowanych samochodów BMW rachunku",
+            "zh-cn": "查询互联驾驶宝马的数据注册的汽车在您的帐户宝马"
         },
         "news": {
-            "1.4.0": {
+            "1.4.1": {
                 "en": "changed adapter for Admin V3 and also incorporated changes in readme and Konfig",
-                "de": "Adaptzer auf Admin3 und neuen Tests upgedated sowie Änderungen im Readme und Konfig"
+                "de": "Adaptzer auf Admin3 und neuen Tests upgedated sowie Änderungen im Readme und Konfig",
+                "ru": "менял адаптер для админа В3, а также внесены изменения в файл README и конфиг",
+                "pt": "mudou o adaptador para o de Administração V3 e incorporou alterações no arquivo leiame e Konfig",
+                "nl": "gewijzigd adapter voor Admin V3 en ook opgenomen wijzigingen in de readme-en Konfig",
+                "fr": "changé adaptateur pour Admin V3 et incorpore également des changements dans les readme et Konfig",
+                "it": "cambiato adattatore per Admin V3 e anche incorporato modifiche nel file leggimi e Konfig",
+                "es": "cambiado el adaptador para el Admin V3 y también se incorporan los cambios en el archivo léame y Konfig",
+                "pl": "zmieniałem zasilacz do admina B3, a także wprowadzono zmiany w pliku README i konfig",
+                "zh-cn": "改变适配器管理V3，并改变自述和Konfig"
             }
         },
         "compact": true,
@@ -27,11 +43,12 @@
         "loglevel": "info",
         "icon": "bmw.png",
         "keywords": [
-            "BMW", "ConnectedDrive"
+            "BMW",
+            "ConnectedDrive"
         ],
         "preserveSettings": null,
-        "supportCustoms": false,  
-        "materialize": true,     
+        "supportCustoms": false,
+        "materialize": true,
         "extIcon": "https://raw.githubusercontent.com/frankjoke/ioBroker.bmw/master/admin/bmw.png",
         "messagebox": true,
         "subscribe": "messagebox",
@@ -50,6 +67,7 @@
         "password": "password",
         "cleanup": false,
         "forceinit": true,
+        "debug": false,
         "services": "efficiency, dynamic, navigation, remote_execution, remote_chargingprofile, remote_history, servicepartner, service, specs, store, map_download",
         "delete": "modelType, series, basicType, brand, licensePlate, hasNavi, bodyType, dcOnly, hasSunRoof, hasRex, steering, driveTrain, doorCount, vehicleTracking, isoCountryCode, auxPowerRegular, auxPowerEcoPro, auxPowerEcoProPlus, ccmMessages",
         "flatten": "attributesMap, vehicleMessages, cbsMessages, twoTimeTimer, characteristicList, lifeTimeList, lastTripList, remoteServiceEvent, update, storePortfolio",
