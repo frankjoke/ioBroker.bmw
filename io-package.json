@@ -52,7 +52,7 @@
         "extIcon": "https://raw.githubusercontent.com/frankjoke/ioBroker.bmw/master/admin/bmw.png",
         "messagebox": true,
         "subscribe": "messagebox",
-        "type": "hardware",
+        "type": "vehicle",
         "config": {
             "minWidth": 640,
             "width ": 640,
